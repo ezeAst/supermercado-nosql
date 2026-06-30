@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+  api:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: >
+      sh -c "pip install --no-cache-dir -r requirements.txt &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      - mongo-init
+      - redis-master
+    networks:
+      - supermercado-net
+
+  mongo-primary:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-primary-data:/data/db
+    networks:
+      - supermercado-net
+
+  mongo-secondary1:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo-secondary1-data:/data/db
+    depends_on:
+      - mongo-primary
+    networks:
+      - supermercado-net
+
+  mongo-secondary2:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo-secondary2-data:/data/db
+    depends_on:
+      - mongo-primary
+    networks:
+      - supermercado-net
+
+  mongo-init:
+    image: mongo:6.0
+    depends_on:
+      - mongo-primary
+      - mongo-secondary1
+      - mongo-secondary2
+    networks:
+      - supermercado-net
+    restart: "no"
+    command: >
+      sh -c "
+        sleep 10 &&
+        mongosh --host mongo-primary:27017 --eval '
+          rs.initiate({
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongo-primary:27017\", priority: 2 },
+              { _id: 1, host: \"mongo-secondary1:27017\", priority: 1 },
+              { _id: 2, host: \"mongo-secondary2:27017\", priority: 1 }
+            ]
+          })
+        '
+      "
+
+  redis-master:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-master-data:/data
+    networks:
+      - supermercado-net
+
+  redis-replica:
+    image: redis:7
+    command: ["redis-server", "--replicaof", "redis-master", "6379"]
+    depends_on:
+      - redis-master
+    networks:
+      - supermercado-net
+
+networks:
+  supermercado-net:
+    driver: bridge
+
+volumes:
+  mongo-primary-data:
+  mongo-secondary1-data:
+  mongo-secondary2-data:
+  redis-master-data:

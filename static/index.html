@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supermercado NoSQL — Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    header {
+      background: #1a6b3c;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 12px; opacity: 0.75; }
+
+    .tabs {
+      display: flex;
+      background: #155c33;
+    }
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: transparent;
+      color: #aed6c0;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-btn.active {
+      color: #fff;
+      border-bottom-color: #5fdd9d;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .tab-panel { display: none; padding: 16px; }
+    .tab-panel.active { display: block; }
+
+    /* Layout cliente */
+    .client-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+    .left-col { display: flex; flex-direction: column; gap: 16px; }
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card-header {
+      background: #f0f0f0;
+      border-bottom: 1px solid #ddd;
+      padding: 8px 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-body { padding: 12px; }
+
+    /* Selector usuario */
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    select, input[type="text"] {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+    select { min-width: 220px; }
+
+    /* Tablas */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      background: #f7f7f7;
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 2px solid #ddd;
+      white-space: nowrap;
+    }
+    td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    /* Botones */
+    .btn {
+      border: none;
+      border-radius: 4px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-green  { background: #1a6b3c; color: #fff; }
+    .btn-green:hover  { background: #155c33; }
+    .btn-blue   { background: #1565c0; color: #fff; }
+    .btn-blue:hover   { background: #0d47a1; }
+    .btn-gray   { background: #e0e0e0; color: #333; }
+    .btn-gray:hover   { background: #bdbdbd; }
+    .btn-red    { background: #c62828; color: #fff; }
+    .btn-red:hover    { background: #b71c1c; }
+    .btn-sm { padding: 3px 9px; font-size: 11px; }
+
+    /* Badge estado */
+    .badge {
+      display: inline-block;
+      border-radius: 3px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-registrado   { background: #e3f2fd; color: #1565c0; }
+    .badge-en_preparacion { background: #fff3e0; color: #e65100; }
+    .badge-listo        { background: #e8f5e9; color: #2e7d32; }
+    .badge-entregado    { background: #ede7f6; color: #4527a0; }
+
+    /* Confirmar form */
+    .confirm-form { display: flex; flex-direction: column; gap: 8px; }
+    .form-row { display: flex; flex-direction: column; gap: 4px; }
+    .form-row label { font-size: 12px; color: #555; font-weight: 600; }
+    .form-row input, .form-row select { width: 100%; }
+    .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+    /* Carrito total */
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      padding: 8px 0 0;
+      border-top: 2px solid #eee;
+      margin-top: 8px;
+    }
+
+    /* Almacén cards */
+    .aisle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .aisle-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .aisle-card-header {
+      background: #e8f5e9;
+      border-bottom: 1px solid #c8e6c9;
+      padding: 7px 10px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #1b5e20;
+    }
+    .aisle-title {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .dept-label {
+      font-size: 11px;
+      font-weight: 400;
+      color: #4caf50;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .aisle-arrow { color: #81c784; font-size: 13px; }
+    .aisle-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      font-weight: 400;
+    }
+    .zona-badge {
+      background: #1b5e20;
+      color: #fff;
+      border-radius: 3px;
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .encargado {
+      font-size: 11px;
+      color: #388e3c;
+    }
+    .aisle-card table { font-size: 12px; }
+
+    /* Mensajes */
+    .msg-empty { color: #888; font-style: italic; padding: 8px 0; }
+    .msg-error { color: #c62828; padding: 6px; background: #ffebee; border-radius: 4px; }
+    .msg-success { color: #2e7d32; padding: 6px; background: #e8f5e9; border-radius: 4px; }
+
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc; border-top-color: #555; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .notice-409 {
+      background: #fff3e0;
+      border: 1px solid #ffcc80;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: #e65100;
+    }
+
+    /* ── Infraestructura ───────────────────────────────────── */
+    .infra-section { margin-bottom: 24px; }
+    .infra-section h3 {
+      font-size: 15px; margin-bottom: 10px; color: #1a6b3c;
+      border-bottom: 2px solid #c8e6c9; padding-bottom: 4px;
+    }
+    .node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 8px; }
+    .node-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; background: #fff; }
+    .node-card.primary { border-color: #1a6b3c; background: #f1f8e9; }
+    .node-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 6px; }
+    .node-card.primary .node-label { color: #1a6b3c; }
+    .node-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; word-break: break-all; }
+    .node-detail { font-size: 12px; color: #555; margin: 2px 0; }
+    .node-lag { font-size: 12px; color: #e65100; margin-top: 4px; }
+    .index-list { list-style: none; margin: 0; padding: 0; }
+    .index-item { background: #fff; border: 1px solid #eee; border-radius: 4px; padding: 6px 10px; margin-bottom: 4px; font-size: 12px; }
+    .index-name { font-weight: 600; color: #1565c0; }
+    .flag { display: inline-block; border-radius: 3px; padding: 1px 5px; font-size: 10px; font-weight: 700; margin-left: 4px; }
+    .flag-unique { background: #e3f2fd; color: #1565c0; }
+    .flag-sparse { background: #fff3e0; color: #e65100; }
+    .flag-text   { background: #f3e5f5; color: #6a1b9a; }
+    .redis-claves-table { font-size: 12px; width: 100%; border-collapse: collapse; }
+    .redis-claves-table th { background: #f7f7f7; text-align: left; padding: 6px 8px; border-bottom: 2px solid #ddd; }
+    .redis-claves-table td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+    .ttl-low { color: #c62828; font-weight: 700; }
+    .ttl-ok  { color: #2e7d32; }
+    .infra-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .read-pref-badge {
+      display: inline-block; background: #1a6b3c; color: #fff;
+      border-radius: 4px; padding: 3px 10px; font-size: 12px; font-weight: 600; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛒 Supermercado NoSQL</h1>
+  <span>Demo en vivo · MongoDB + Redis</span>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('cliente')">Vista Cliente</button>
+  <button class="tab-btn" onclick="switchTab('almacen')">Vista Almacén</button>
+  <button class="tab-btn" onclick="switchTab('infra')">🔬 Infraestructura</button>
+</div>
+
+<!-- ============================================================
+     TAB CLIENTE
+     ============================================================ -->
+<div id="tab-cliente" class="tab-panel active">
+
+  <!-- Selector de usuario -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-body">
+      <div class="user-row">
+        <label for="sel-usuario" style="font-weight:600;">Usuario:</label>
+        <select id="sel-usuario" onchange="onUsuarioChange()">
+          <option value="">Cargando usuarios…</option>
+        </select>
+        <span id="user-info" style="color:#555; font-size:12px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="client-grid">
+    <!-- Columna izquierda: catálogo + historial -->
+    <div class="left-col">
+
+      <!-- Catálogo -->
+      <div class="card">
+        <div class="card-header">
+          Catálogo de productos
+          <input type="text" id="filtro-catalogo" placeholder="Filtrar por nombre…" oninput="renderCatalogo()" style="width:200px; font-size:12px;" />
+        </div>
+        <div class="card-body" style="padding:0; max-height:340px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Pasillo</th>
+                <th style="text-align:right;">Precio</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-catalogo">
+              <tr><td colspan="4" class="msg-empty">Cargando catálogo…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Historial de pedidos -->
+      <div class="card">
+        <div class="card-header">
+          Historial de pedidos
+          <button class="btn btn-gray btn-sm" onclick="cargarHistorial()">Actualizar</button>
+        </div>
+        <div class="card-body" style="padding:0; max-height:300px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th style="text-align:right;">Total</th>
+                <th>Productos</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-historial">
+              <tr><td colspan="4" class="msg-empty">Selecciona un usuario para ver su historial.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="historial-cursor" style="padding:6px 12px; font-size:12px;"></div>
+      </div>
+
+    </div>
+
+    <!-- Columna derecha: carrito + confirmar -->
+    <div class="right-col">
+
+      <!-- Carrito actual -->
+      <div class="card">
+        <div class="card-header">
+          Carrito actual
+          <button class="btn btn-gray btn-sm" onclick="cargarCarrito()">↺</button>
+        </div>
+        <div class="card-body" style="padding:0; max-height:240px; overflow-y:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align:center;">Cant.</th>
+                <th style="text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-carrito">
+              <tr><td colspan="3" class="msg-empty">Carrito vacío.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-body" style="padding-top:0;">
+          <div class="cart-total">
+            <span>Total</span>
+            <span id="carrito-total">S/ 0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirmar pedido -->
+      <div class="card">
+        <div class="card-header">Confirmar pedido</div>
+        <div class="card-body">
+          <div class="confirm-form">
+            <div class="form-row">
+              <label>Dirección de entrega</label>
+              <input type="text" id="input-direccion" placeholder="Ej: Av. Universitaria 1801, Lima" />
+            </div>
+            <div class="form-row">
+              <label>Método de pago</label>
+              <select id="sel-metodo">
+                <option value="tarjeta">Tarjeta</option>
+                <option value="efectivo">Efectivo</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-green" onclick="confirmarPedido()">Confirmar pedido</button>
+              <button class="btn btn-red btn-sm" onclick="limpiarCarrito()" title="Vaciar carrito (solo frontend)">✕ Vaciar</button>
+            </div>
+            <div id="msg-confirmar"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB ALMACÉN
+     ============================================================ -->
+<div id="tab-almacen" class="tab-panel">
+
+  <!-- Cola de pedidos individuales -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      Cola de pedidos pendientes
+      <button class="btn btn-gray btn-sm" onclick="cargarCola()">↺ Actualizar</button>
+    </div>
+    <div style="max-height:240px; overflow-y:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>ID pedido</th>
+            <th>Fecha</th>
+            <th style="text-align:center;">Productos</th>
+            <th style="text-align:right;">Total</th>
+            <th style="text-align:center;">Estado actual</th>
+            <th style="text-align:center;">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-cola">
+          <tr><td colspan="6" class="msg-empty">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Vista por pasillos -->
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+    <h2 style="font-size:16px;">Productos pendientes por pasillo</h2>
+    <button class="btn btn-blue" onclick="cargarAlmacen()">↺ Actualizar</button>
+    <span id="almacen-ts" style="font-size:12px; color:#888;"></span>
+  </div>
+  <div id="almacen-msg"></div>
+  <div id="almacen-grid" class="aisle-grid"></div>
+</div>
+
+<!-- ============================================================
+     TAB INFRAESTRUCTURA
+     ============================================================ -->
+<div id="tab-infra" class="tab-panel" style="padding:16px;">
+
+  <div class="infra-bar">
+    <button class="btn btn-blue" onclick="cargarInfra()">↺ Actualizar todo</button>
+    <span id="infra-ts" style="font-size:12px; color:#888;"></span>
+    <label style="font-size:12px; display:flex; align-items:center; gap:6px;">
+      <input type="checkbox" id="chk-autorefresh" onchange="toggleAutoRefresh()"> Auto-refresh cada 5s
+    </label>
+  </div>
+
+  <!-- 1. MongoDB Replica Set -->
+  <div class="infra-section">
+    <h3>MongoDB — Replica Set</h3>
+    <div id="infra-msg-rs"></div>
+    <div id="infra-rp-badge" style="margin-bottom:10px;"></div>
+    <div id="infra-rs-grid" class="node-grid"></div>
+  </div>
+
+  <!-- 2. Redis Replicación -->
+  <div class="infra-section">
+    <h3>Redis — Replicación Master / Réplica</h3>
+    <div id="infra-msg-redis"></div>
+    <div id="infra-redis-grid" class="node-grid"></div>
+  </div>
+
+  <!-- 3. Índices MongoDB -->
+  <div class="infra-section">
+    <h3>MongoDB — Índices activos</h3>
+    <div id="infra-msg-idx"></div>
+    <div id="infra-indices"></div>
+  </div>
+
+  <!-- 4. Claves Redis activas -->
+  <div class="infra-section">
+    <h3>Redis — Claves activas (<code>carrito:*</code> y <code>pedido_estado:*</code>)</h3>
+    <div id="infra-msg-claves"></div>
+    <table class="redis-claves-table">
+      <thead>
+        <tr>
+          <th>Clave</th>
+          <th>Tipo</th>
+          <th style="text-align:right;">TTL (s)</th>
+          <th>Valor resumido</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-claves"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://localhost:8000/api/v1';
+
+  // ── Estado global ──────────────────────────────────────────
+  let usuarios = [];
+  let catalogo = [];
+  let usuarioActual = null;
+
+  // ── Inicialización ─────────────────────────────────────────
+  async function init() {
+    try {
+      const res = await fetch('/static/usuarios.json');
+      usuarios = await res.json();
+      const sel = document.getElementById('sel-usuario');
+      sel.innerHTML = '<option value="">— Selecciona un usuario —</option>';
+      usuarios.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u._id;
+        opt.textContent = `${u.nombre} (${u.email})`;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      document.getElementById('sel-usuario').innerHTML = '<option>Error cargando usuarios</option>';
+    }
+
+    try {
+      const res = await fetch(`${API}/productos`);
+      catalogo = await res.json();
+      renderCatalogo();
+    } catch (e) {
+      document.querySelector('#tabla-catalogo').innerHTML =
+        `<tr><td colspan="4" class="msg-error">Error cargando catálogo: ${e.message}</td></tr>`;
+    }
+  }
+
+  // ── Cambio de usuario ──────────────────────────────────────
+  async function onUsuarioChange() {
+    const uid = document.getElementById('sel-usuario').value;
+    usuarioActual = uid || null;
+    const u = usuarios.find(x => x._id === uid);
+    document.getElementById('user-info').textContent = u ? `📍 ${u.direccion}` : '';
+    if (u && !document.getElementById('input-direccion').value) {
+      document.getElementById('input-direccion').value = u.direccion;
+    }
+    limpiarMsgConfirmar();
+    if (uid) {
+      await Promise.all([cargarCarrito(), cargarHistorial()]);
+    } else {
+      renderCarritoVacio();
+      document.querySelector('#tabla-historial').innerHTML =
+        '<tr><td colspan="4" class="msg-empty">Selecciona un usuario para ver su historial.</td></tr>';
+    }
+  }
+
+  // ── Catálogo ───────────────────────────────────────────────
+  function renderCatalogo() {
+    const filtro = document.getElementById('filtro-catalogo').value.toLowerCase();
+    const items = filtro
+      ? catalogo.filter(p => p.nombre.toLowerCase().includes(filtro) || p.pasillo_nombre.toLowerCase().includes(filtro))
+      : catalogo;
+    const tbody = document.getElementById('tabla-catalogo');
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="msg-empty">Sin resultados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(p => `
+      <tr>
+        <td>${esc(p.nombre)}</td>
+        <td style="color:#555;">${esc(p.pasillo_nombre)}</td>
+        <td style="text-align:right;">S/ ${p.precio.toFixed(2)}</td>
+        <td><button class="btn btn-green btn-sm" onclick="agregarAlCarrito('${p._id}')">+ Agregar</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── Agregar al carrito ─────────────────────────────────────
+  async function agregarAlCarrito(productoId) {
+    if (!usuarioActual) { alert('Selecciona un usuario primero.'); return; }
+    try {
+      const res = await fetch(`${API}/carritos/${usuarioActual}/productos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ producto_id: productoId, cantidad: 1 }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || res.statusText); }
+      await cargarCarrito();
+    } catch (e) {
+      alert('Error al agregar: ' + e.message);
+    }
+  }
+
+  // ── Cargar carrito ─────────────────────────────────────────
+  async function cargarCarrito() {
+    if (!usuarioActual) return;
+    const tbody = document.getElementById('tabla-carrito');
+    tbody.innerHTML = '<tr><td colspan="3"><span class="spinner"></span></td></tr>';
+    try {
+      const res = await fetch(`${API}/carritos/${usuarioActual}`);
+      const items = await res.json();
+      renderCarrito(items);
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="3" class="msg-error">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderCarrito(items) {
+    const tbody = document.getElementById('tabla-carrito');
+    if (!items.length) {
+      renderCarritoVacio();
+      return;
+    }
+    tbody.innerHTML = items.map(i => `
+      <tr>
+        <td>${esc(i.nombre)}</td>
+        <td style="text-align:center;">${i.cantidad}</td>
+        <td style="text-align:right;">S/ ${i.subtotal.toFixed(2)}</td>
+      </tr>
+    `).join('');
+    const total = items.reduce((s, i) => s + i.subtotal, 0);
+    document.getElementById('carrito-total').textContent = `S/ ${total.toFixed(2)}`;
+  }
+
+  function renderCarritoVacio() {
+    document.getElementById('tabla-carrito').innerHTML =
+      '<tr><td colspan="3" class="msg-empty">Carrito vacío.</td></tr>';
+    document.getElementById('carrito-total').textContent = 'S/ 0.00';
+  }
+
+  // ── Vaciar carrito (DEL carrito:{uid} en Redis)
+  async function limpiarCarrito() {
+    if (!usuarioActual) return;
+    try {
+      await fetch(`${API}/carritos/${usuarioActual}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error('Error al vaciar carrito:', e);
+    }
+    renderCarritoVacio();
+  }
+
+  // ── Confirmar pedido ───────────────────────────────────────
+  async function confirmarPedido() {
+    if (!usuarioActual) { alert('Selecciona un usuario primero.'); return; }
+    const dir = document.getElementById('input-direccion').value.trim();
+    if (!dir) { alert('Ingresa la dirección de entrega.'); return; }
+    const metodo = document.getElementById('sel-metodo').value;
+    const idempotencyKey = crypto.randomUUID();
+    const msgDiv = document.getElementById('msg-confirmar');
+    msgDiv.innerHTML = '<span class="spinner"></span> Procesando…';
+
+    try {
+      const res = await fetch(`${API}/carritos/${usuarioActual}/confirmar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({ direccion_entrega: dir, metodo_pago: metodo }),
+      });
+      const data = await res.json();
+
+      if (res.status === 409) {
+        msgDiv.innerHTML = `<div class="notice-409">⚠️ Pedido duplicado (409) — ya existía con ese Idempotency-Key. Se devolvió el pedido original sin crear uno nuevo.</div>`;
+      } else if (res.status === 201) {
+        msgDiv.innerHTML = `<div class="msg-success">✅ Pedido creado: <strong>${data._id}</strong> — estado: <em>${data.estado}</em></div>`;
+        renderCarritoVacio();
+        await cargarHistorial();
+      } else {
+        msgDiv.innerHTML = `<div class="msg-error">Error ${res.status}: ${data.detail || JSON.stringify(data)}</div>`;
+      }
+    } catch (e) {
+      msgDiv.innerHTML = `<div class="msg-error">Error de red: ${e.message}</div>`;
+    }
+  }
+
+  function limpiarMsgConfirmar() {
+    document.getElementById('msg-confirmar').innerHTML = '';
+  }
+
+  // ── Historial ──────────────────────────────────────────────
+  async function cargarHistorial() {
+    if (!usuarioActual) return;
+    const tbody = document.getElementById('tabla-historial');
+    tbody.innerHTML = '<tr><td colspan="4"><span class="spinner"></span></td></tr>';
+    try {
+      const res = await fetch(`${API}/usuarios/${usuarioActual}/pedidos?limit=10`);
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || res.statusText); }
+      const data = await res.json();
+      renderHistorial(data.pedidos);
+      const cursorDiv = document.getElementById('historial-cursor');
+      cursorDiv.textContent = data.siguiente_cursor
+        ? `Cursor siguiente: ${data.siguiente_cursor}`
+        : '';
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" class="msg-error">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderHistorial(pedidos) {
+    const tbody = document.getElementById('tabla-historial');
+    if (!pedidos.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="msg-empty">Sin pedidos.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = pedidos.map(p => {
+      const fecha = new Date(p.fecha_creacion).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
+      const prods = p.productos.map(x => `${x.nombre} ×${x.cantidad}`).join(', ');
+      return `
+        <tr>
+          <td style="white-space:nowrap;">${fecha}</td>
+          <td><span class="badge badge-${p.estado}">${p.estado}</span></td>
+          <td style="text-align:right;">S/ ${p.total.toFixed(2)}</td>
+          <td style="color:#555; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(prods)}">${esc(prods)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ── Cola de pedidos (almacén) ──────────────────────────────
+  const SIGUIENTE_ESTADO = {
+    registrado: 'en_preparacion',
+    en_preparacion: 'listo',
+    listo: 'entregado',
+  };
+  const LABEL_ACCION = {
+    registrado: 'Iniciar preparación',
+    en_preparacion: 'Marcar listo',
+    listo: 'Marcar entregado',
+  };
+
+  async function cargarCola() {
+    const tbody = document.getElementById('tabla-cola');
+    tbody.innerHTML = '<tr><td colspan="6"><span class="spinner"></span></td></tr>';
+    try {
+      const res = await fetch(`${API}/almacen/pedidos`);
+      const pedidos = await res.json();
+      if (!pedidos.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="msg-empty">No hay pedidos pendientes.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = pedidos.map(p => {
+        const fecha = new Date(p.fecha_creacion).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' });
+        const sigEstado = SIGUIENTE_ESTADO[p.estado];
+        const btnLabel = LABEL_ACCION[p.estado] || '';
+        const btn = sigEstado
+          ? `<button class="btn btn-green btn-sm" onclick="cambiarEstado('${p._id}','${sigEstado}')">${btnLabel}</button>`
+          : `<span style="color:#888; font-size:11px;">—</span>`;
+        return `
+          <tr id="fila-${p._id}">
+            <td style="font-family:monospace; font-size:11px;" title="${p._id}">${p._id.slice(-8)}</td>
+            <td style="white-space:nowrap;">${fecha}</td>
+            <td style="text-align:center;">${p.num_productos}</td>
+            <td style="text-align:right;">S/ ${p.total.toFixed(2)}</td>
+            <td style="text-align:center;"><span class="badge badge-${p.estado}">${p.estado}</span></td>
+            <td style="text-align:center;">${btn}</td>
+          </tr>`;
+      }).join('');
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="6" class="msg-error">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  async function cambiarEstado(pedidoId, nuevoEstado) {
+    try {
+      const res = await fetch(`${API}/almacen/pedidos/${pedidoId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || res.statusText); }
+      // Refrescar cola y vista de pasillos simultáneamente
+      await Promise.all([cargarCola(), cargarAlmacen()]);
+    } catch (e) {
+      alert('Error al cambiar estado: ' + e.message);
+    }
+  }
+
+  // ── Almacén ────────────────────────────────────────────────
+  async function cargarAlmacen() {
+    const grid = document.getElementById('almacen-grid');
+    const msgDiv = document.getElementById('almacen-msg');
+    grid.innerHTML = '';
+    msgDiv.innerHTML = '<span class="spinner"></span> Consultando pedidos pendientes…';
+    try {
+      const res = await fetch(`${API}/almacen/pedidos/pendientes`);
+      const data = await res.json();
+      msgDiv.innerHTML = '';
+      document.getElementById('almacen-ts').textContent =
+        'Actualizado: ' + new Date().toLocaleTimeString('es-PE');
+      if (!data.length) {
+        grid.innerHTML = '<p class="msg-empty">No hay pedidos pendientes (estado registrado o en_preparacion).</p>';
+        return;
+      }
+      grid.innerHTML = data.map(pasillo => `
+        <div class="aisle-card">
+          <div class="aisle-card-header">
+            <div class="aisle-title">
+              <span class="dept-label">${esc(pasillo.departamento_nombre || '—')}</span>
+              <span class="aisle-arrow">›</span>
+              📦 ${esc(pasillo.pasillo_nombre)}
+            </div>
+            <div class="aisle-location">
+              <span class="zona-badge">${esc(pasillo.zona_almacen || '—')}</span>
+              <span class="encargado">👤 ${esc(pasillo.encargado_area || '—')}</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th style="text-align:center;">Total a preparar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pasillo.productos.map(p => `
+                <tr>
+                  <td>${esc(p.nombre)}</td>
+                  <td style="text-align:center; font-weight:700;">${p.cantidad_total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `).join('');
+    } catch (e) {
+      msgDiv.innerHTML = `<div class="msg-error">Error: ${e.message}</div>`;
+    }
+  }
+
+  // ── Infraestructura ───────────────────────────────────────
+  let autoRefreshTimer = null;
+
+  function toggleAutoRefresh() {
+    const checked = document.getElementById('chk-autorefresh').checked;
+    if (checked) {
+      autoRefreshTimer = setInterval(cargarInfra, 5000);
+    } else {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  }
+
+  async function cargarInfra() {
+    document.getElementById('infra-ts').textContent = 'Actualizando…';
+    await Promise.all([cargarReplicaSet(), cargarRedisInfo(), cargarIndices(), cargarClaves()]);
+    document.getElementById('infra-ts').textContent =
+      'Último refresh: ' + new Date().toLocaleTimeString('es-PE');
+  }
+
+  async function cargarReplicaSet() {
+    const grid = document.getElementById('infra-rs-grid');
+    const msg  = document.getElementById('infra-msg-rs');
+    const badge = document.getElementById('infra-rp-badge');
+    try {
+      const res = await fetch(`${API}/infra/mongo/replica-set`);
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const data = await res.json();
+      msg.innerHTML = '';
+      badge.innerHTML = `<span class="read-pref-badge">readPreference = ${esc(data.read_preference)}</span>
+        <span style="font-size:12px; color:#555; margin-left:8px;">Las lecturas de catálogo e historial se dirigen a nodos SECONDARY.</span>`;
+      grid.innerHTML = data.members.map(m => {
+        const isPrimary = m.state === 'PRIMARY';
+        const lagHtml = m.lag_segundos !== null && m.lag_segundos !== undefined
+          ? `<div class="node-lag">Lag replicación: ${m.lag_segundos}s</div>` : '';
+        return `
+          <div class="node-card ${isPrimary ? 'primary' : ''}">
+            <div class="node-label">${esc(m.state)}</div>
+            <div class="node-name">${esc(m.name)}</div>
+            <div class="node-detail">Health: ${m.health === 1 ? '✅ Up' : '❌ Down'}</div>
+            <div class="node-detail">optime: ${m.optimeDate ? new Date(m.optimeDate).toLocaleTimeString('es-PE') : '—'}</div>
+            ${lagHtml}
+          </div>`;
+      }).join('');
+    } catch (e) {
+      msg.innerHTML = `<div class="msg-error">Error replica set: ${e.message}</div>`;
+      grid.innerHTML = '';
+    }
+  }
+
+  async function cargarRedisInfo() {
+    const grid = document.getElementById('infra-redis-grid');
+    const msg  = document.getElementById('infra-msg-redis');
+    try {
+      const res = await fetch(`${API}/infra/redis/info`);
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const data = await res.json();
+      const m = data.master || {};
+      const r = data.replica;
+
+      const masterCard = `
+        <div class="node-card primary">
+          <div class="node-label">MASTER</div>
+          <div class="node-detail">Role: <strong>${esc(m.role || '—')}</strong></div>
+          <div class="node-detail">Slaves conectados: ${m.connected_slaves ?? '—'}</div>
+          <div class="node-detail">Repl offset: ${m.master_repl_offset ?? '—'}</div>
+          <div class="node-detail" style="word-break:break-all; font-size:11px;">
+            Repl ID: <code>${(m.master_replid || '').slice(0, 16)}…</code>
+          </div>
+        </div>`;
+
+      let replicaCard;
+      if (!r) {
+        replicaCard = `<div class="node-card"><div class="node-label">RÉPLICA</div>
+          <div class="node-detail" style="color:#888;">No configurada (añadir REDIS_REPLICA_HOST al .env)</div></div>`;
+      } else if (r.error) {
+        replicaCard = `<div class="node-card"><div class="node-label">RÉPLICA</div>
+          <div class="node-detail msg-error">${esc(r.error)}</div></div>`;
+      } else {
+        replicaCard = `
+          <div class="node-card">
+            <div class="node-label">RÉPLICA</div>
+            <div class="node-detail">Role: <strong>${esc(r.role || '—')}</strong></div>
+            <div class="node-detail">Master: ${esc(r.master_host || '—')}:${r.master_port || ''}</div>
+            <div class="node-detail">Link: ${esc(r.master_link_status || '—')}</div>
+            <div class="node-detail">Offset: ${r.slave_repl_offset ?? '—'}</div>
+            <div class="node-lag">Lag master: ${r.lag ?? '—'}s</div>
+          </div>`;
+      }
+      msg.innerHTML = '';
+      grid.innerHTML = masterCard + replicaCard;
+    } catch (e) {
+      msg.innerHTML = `<div class="msg-error">Error Redis info: ${e.message}</div>`;
+      grid.innerHTML = '';
+    }
+  }
+
+  async function cargarIndices() {
+    const container = document.getElementById('infra-indices');
+    const msg       = document.getElementById('infra-msg-idx');
+    try {
+      const res = await fetch(`${API}/infra/mongo/indices`);
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const data = await res.json();
+      msg.innerHTML = '';
+      container.innerHTML = Object.entries(data).map(([col, indices]) => `
+        <div style="margin-bottom:14px;">
+          <div style="font-weight:600; font-size:13px; color:#333; margin-bottom:5px;">
+            📋 ${esc(col)}
+            <span style="color:#888; font-weight:400; font-size:12px;">(${indices.length} índice${indices.length !== 1 ? 's' : ''})</span>
+          </div>
+          <ul class="index-list">
+            ${indices.map(idx => {
+              const campos = (idx.campos || []).map(([f, v]) => `${f}:${v}`).join(', ');
+              const flags = [
+                idx.unique ? '<span class="flag flag-unique">UNIQUE</span>' : '',
+                idx.sparse ? '<span class="flag flag-sparse">SPARSE</span>' : '',
+                idx.text   ? '<span class="flag flag-text">TEXT</span>'     : '',
+              ].join('');
+              return `<li class="index-item">
+                <span class="index-name">${esc(idx.nombre)}</span>${flags}
+                <span style="color:#777; font-size:11px; margin-left:8px;">[${esc(campos)}]</span>
+              </li>`;
+            }).join('')}
+          </ul>
+        </div>
+      `).join('');
+    } catch (e) {
+      msg.innerHTML = `<div class="msg-error">Error índices: ${e.message}</div>`;
+      container.innerHTML = '';
+    }
+  }
+
+  async function cargarClaves() {
+    const tbody = document.getElementById('tabla-claves');
+    const msg   = document.getElementById('infra-msg-claves');
+    try {
+      const res = await fetch(`${API}/infra/redis/claves`);
+      if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+      const claves = await res.json();
+      msg.innerHTML = '';
+      if (!claves.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="msg-empty">Sin claves activas. Agrega productos al carrito para ver claves.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = claves.map(c => {
+        const ttlClass = c.ttl_segundos > 0 && c.ttl_segundos < 300 ? 'ttl-low'
+                       : c.ttl_segundos > 0 ? 'ttl-ok' : '';
+        const ttlText  = c.ttl_segundos === -1 ? '∞'
+                       : c.ttl_segundos === -2 ? '(expirada)' : String(c.ttl_segundos);
+        return `<tr>
+          <td style="font-family:monospace;">${esc(c.clave)}</td>
+          <td>${esc(c.tipo)}</td>
+          <td style="text-align:right;" class="${ttlClass}">${ttlText}</td>
+          <td style="color:#555; max-width:340px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+              title="${esc(c.valor_resumen || '')}">${esc(c.valor_resumen || '—')}</td>
+        </tr>`;
+      }).join('');
+    } catch (e) {
+      msg.innerHTML = `<div class="msg-error">Error claves Redis: ${e.message}</div>`;
+      tbody.innerHTML = '';
+    }
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────
+  function switchTab(name) {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+      const chk = document.getElementById('chk-autorefresh');
+      if (chk) chk.checked = false;
+    }
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    event.currentTarget.classList.add('active');
+    if (name === 'almacen') { cargarCola(); cargarAlmacen(); }
+    if (name === 'infra')   { cargarInfra(); }
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  init();
+</script>
+</body>
+</html>
