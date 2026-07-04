@@ -1,7 +1,7 @@
 # Guión de exposición — Plataforma de Supermercado Online NoSQL
 
 **Curso:** Bases de Datos No Estructuradas, Maestría en Informática, PUCP  
-**Frontend (React):** `http://localhost:5173`  
+**Frontend (React):** `http://localhost:8001`  
 **API / Swagger:** `http://localhost:8000/docs`
 
 ---
