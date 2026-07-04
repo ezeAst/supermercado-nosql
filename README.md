@@ -69,7 +69,7 @@ docker compose exec api python scripts/create_indexes.py
 
 | Recurso | URL |
 |---------|-----|
-| Frontend demo | http://localhost:8000/static/index.html |
+| Frontend demo | http://localhost:5173 |
 | API docs (Swagger) | http://localhost:8000/docs |
 | API docs (Redoc) | http://localhost:8000/redoc |
 
@@ -84,6 +84,7 @@ supermercado-nosql/
 │   └── services/    # Lógica de negocio
 ├── data/            # Archivos CSV de Instacart
 ├── doc/             # Documentación del proyecto
+├── frontend/        # Frontend en react
 ├── scripts/         # seed.py y create_indexes.py
 ├── static/          # Frontend HTML
 ├── docker-compose.yml

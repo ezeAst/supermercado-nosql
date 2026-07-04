@@ -18,6 +18,7 @@ import json
 import os
 import random
 import time
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 
@@ -53,21 +54,29 @@ DIRECCIONES = [
 ]
 
 USUARIOS_MOCK = [
-    ("Ana Torres", "ana.torres"),
-    ("Carlos Mendoza", "carlos.mendoza"),
-    ("María García", "maria.garcia"),
-    ("Luis Quispe", "luis.quispe"),
-    ("Rosa Flores", "rosa.flores"),
-    ("Jorge Díaz", "jorge.diaz"),
-    ("Patricia Vega", "patricia.vega"),
-    ("Roberto Sánchez", "roberto.sanchez"),
-    ("Carmen López", "carmen.lopez"),
-    ("Miguel Ríos", "miguel.rios"),
-    ("Lucía Ramírez", "lucia.ramirez"),
-    ("Eduardo Castro", "eduardo.castro"),
-    ("Sofía Morales", "sofia.morales"),
-    ("Andrés Herrera", "andres.herrera"),
-    ("Valeria Núñez", "valeria.nunez"),
+    ("Ana Torres", "ana.torres", "cliente"),
+    ("Carlos Mendoza", "carlos.mendoza", "cliente"),
+    ("María García", "maria.garcia", "cliente"),
+    ("Luis Quispe", "luis.quispe", "cliente"),
+    ("Rosa Flores", "rosa.flores", "cliente"),
+    ("Jorge Díaz", "jorge.diaz", "cliente"),
+    ("Patricia Vega", "patricia.vega", "cliente"),
+    ("Roberto Sánchez", "roberto.sanchez", "cliente"),
+    ("Carmen López", "carmen.lopez", "cliente"),
+    ("Miguel Ríos", "miguel.rios", "cliente"),
+    ("Lucía Ramírez", "lucia.ramirez", "cliente"),
+    ("Eduardo Castro", "eduardo.castro", "cliente"),
+    ("Sofía Morales", "sofia.morales", "cliente"),
+    ("Andrés Herrera", "andres.herrera", "cliente"),
+    ("Valeria Núñez", "valeria.nunez", "cliente"),
+    # Trabajadores de almacén
+    ("Juan Pérez", "juan.perez", "trabajador"),
+    ("María Gómez", "maria.gomez", "trabajador"),
+]
+
+TRABAJADORES_MOCK = [
+    ("Juan Pérez", "juan.perez", "trabajador"),
+    ("María Gómez", "maria.gomez", "trabajador"),
 ]
 
 
@@ -200,8 +209,10 @@ async def seed_usuarios(db) -> list[dict]:
             "email": f"{alias}@demo.supermercado.pe",
             "telefono": None,
             "direccion": random.choice(DIRECCIONES),
+            "password": unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode().lower().replace(" ", ""),
+            "rol": rol,
         }
-        for nombre, alias in USUARIOS_MOCK
+        for nombre, alias, rol in USUARIOS_MOCK
     ]
     ids = await insertar_lotes(db.usuarios, docs, "usuarios")
     result = [
@@ -210,6 +221,7 @@ async def seed_usuarios(db) -> list[dict]:
             "nombre": docs[i]["nombre"],
             "email": docs[i]["email"],
             "direccion": docs[i]["direccion"],
+            "rol": docs[i]["rol"],
         }
         for i in range(len(docs))
     ]

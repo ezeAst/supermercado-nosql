@@ -1,92 +1,121 @@
 [
   {
-    "_id": "6a432361bca86f8c43b1f597",
+    "_id": "6a4895738bf35c0d22e425a9",
     "nombre": "Ana Torres",
     "email": "ana.torres@demo.supermercado.pe",
-    "direccion": "Av. Arequipa 654, Lince"
+    "direccion": "Av. Arequipa 654, Lince",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f598",
+    "_id": "6a4895738bf35c0d22e425aa",
     "nombre": "Carlos Mendoza",
     "email": "carlos.mendoza@demo.supermercado.pe",
-    "direccion": "Jr. Carabaya 456, Cercado de Lima"
+    "direccion": "Jr. Carabaya 456, Cercado de Lima",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f599",
+    "_id": "6a4895738bf35c0d22e425ab",
     "nombre": "María García",
     "email": "maria.garcia@demo.supermercado.pe",
-    "direccion": "Calle Los Álamos 321, Miraflores"
+    "direccion": "Calle Los Álamos 321, Miraflores",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59a",
+    "_id": "6a4895738bf35c0d22e425ac",
     "nombre": "Luis Quispe",
     "email": "luis.quispe@demo.supermercado.pe",
-    "direccion": "Av. Universitaria 1801, Los Olivos"
+    "direccion": "Av. Universitaria 1801, Los Olivos",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59b",
+    "_id": "6a4895738bf35c0d22e425ad",
     "nombre": "Rosa Flores",
     "email": "rosa.flores@demo.supermercado.pe",
-    "direccion": "Jr. Carabaya 456, Cercado de Lima"
+    "direccion": "Jr. Carabaya 456, Cercado de Lima",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59c",
+    "_id": "6a4895738bf35c0d22e425ae",
     "nombre": "Jorge Díaz",
     "email": "jorge.diaz@demo.supermercado.pe",
-    "direccion": "Av. Universitaria 1801, Los Olivos"
+    "direccion": "Av. Universitaria 1801, Los Olivos",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59d",
+    "_id": "6a4895738bf35c0d22e425af",
     "nombre": "Patricia Vega",
     "email": "patricia.vega@demo.supermercado.pe",
-    "direccion": "Calle Los Álamos 321, Miraflores"
+    "direccion": "Calle Los Álamos 321, Miraflores",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59e",
+    "_id": "6a4895738bf35c0d22e425b0",
     "nombre": "Roberto Sánchez",
     "email": "roberto.sanchez@demo.supermercado.pe",
-    "direccion": "Av. Javier Prado 1234, San Isidro"
+    "direccion": "Av. Javier Prado 1234, San Isidro",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f59f",
+    "_id": "6a4895738bf35c0d22e425b1",
     "nombre": "Carmen López",
     "email": "carmen.lopez@demo.supermercado.pe",
-    "direccion": "Av. Brasil 345, Jesús María"
+    "direccion": "Av. Brasil 345, Jesús María",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a0",
+    "_id": "6a4895738bf35c0d22e425b2",
     "nombre": "Miguel Ríos",
     "email": "miguel.rios@demo.supermercado.pe",
-    "direccion": "Calle Los Álamos 321, Miraflores"
+    "direccion": "Calle Los Álamos 321, Miraflores",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a1",
+    "_id": "6a4895738bf35c0d22e425b3",
     "nombre": "Lucía Ramírez",
     "email": "lucia.ramirez@demo.supermercado.pe",
-    "direccion": "Av. Benavides 5211, Miraflores"
+    "direccion": "Av. Benavides 5211, Miraflores",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a2",
+    "_id": "6a4895738bf35c0d22e425b4",
     "nombre": "Eduardo Castro",
     "email": "eduardo.castro@demo.supermercado.pe",
-    "direccion": "Av. Javier Prado 1234, San Isidro"
+    "direccion": "Av. Javier Prado 1234, San Isidro",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a3",
+    "_id": "6a4895738bf35c0d22e425b5",
     "nombre": "Sofía Morales",
     "email": "sofia.morales@demo.supermercado.pe",
-    "direccion": "Calle Monte Rosa 180, Surco"
+    "direccion": "Calle Monte Rosa 180, Surco",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a4",
+    "_id": "6a4895738bf35c0d22e425b6",
     "nombre": "Andrés Herrera",
     "email": "andres.herrera@demo.supermercado.pe",
-    "direccion": "Jr. de la Unión 890, Cercado de Lima"
+    "direccion": "Jr. de la Unión 890, Cercado de Lima",
+    "rol": "cliente"
   },
   {
-    "_id": "6a432361bca86f8c43b1f5a5",
+    "_id": "6a4895738bf35c0d22e425b7",
     "nombre": "Valeria Núñez",
     "email": "valeria.nunez@demo.supermercado.pe",
-    "direccion": "Calle Monte Rosa 180, Surco"
+    "direccion": "Calle Monte Rosa 180, Surco",
+    "rol": "cliente"
+  },
+  {
+    "_id": "6a4895738bf35c0d22e425b8",
+    "nombre": "Juan Pérez",
+    "email": "juan.perez@demo.supermercado.pe",
+    "direccion": "Calle Los Álamos 321, Miraflores",
+    "rol": "trabajador"
+  },
+  {
+    "_id": "6a4895738bf35c0d22e425b9",
+    "nombre": "María Gómez",
+    "email": "maria.gomez@demo.supermercado.pe",
+    "direccion": "Av. Javier Prado 1234, San Isidro",
+    "rol": "trabajador"
   }
 ]

@@ -94,6 +94,7 @@ async def confirmar_carrito(
                 "pasillo_id": doc["pasillo_id"],
                 "pasillo_nombre": doc["pasillo_nombre"],
                 "departamento_nombre": doc.get("departamento_nombre", ""),
+                "estado_pasillo": "pendiente",
             }
         )
         total += precio * cantidad

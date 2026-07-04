@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.db import mongo, redis
-from app.routes import almacen, carritos, infra, pedidos, productos
+from app.routes import almacen, auth, carritos, infra, pedidos, productos
 
 
 @asynccontextmanager
@@ -22,6 +22,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(auth.router)
 app.include_router(pedidos.router)
 app.include_router(almacen.router)
 app.include_router(carritos.router)
