@@ -1,11 +1,13 @@
-import base64
-import json
 import unicodedata
 
-from fastapi import APIRouter, HTTPException, Request
+from typing import Optional
+
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.db import mongo
+from app.services import auth_service
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Autenticación"])
 
@@ -15,38 +17,42 @@ class LoginBody(BaseModel):
     password: str = Field(..., description="Contraseña")
 
 
-@router.post(
-    "/login",
-    summary="Iniciar sesión",
-    description="Autentica al usuario por email. La contraseña debe coincidir con el nombre del usuario (demo). Retorna un token y los datos del usuario.",
-    responses={
-        200: {
-            "description": "Login exitoso",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "token": "eyJ1c2VyX2lkIjoiNjY1Zj...",
-                        "usuario": {"_id": "...", "nombre": "Ana Torres", "email": "ana.torres@demo.supermercado.pe", "rol": "cliente"},
-                    }
-                }
-            },
-        },
-        401: {"description": "Credenciales inválidas"},
-    },
-)
+@router.get("/usuarios", summary="Listar usuarios por rol")
+async def list_usuarios(
+    rol: str = Query(..., description="Filtrar por rol: cliente o trabajador"),
+):
+    db = mongo.get_db(0)
+    cursor = db.usuarios.find({"rol": rol}, {"_id": 1, "nombre": 1, "email": 1, "rol": 1})
+    result = []
+    async for doc in cursor:
+        result.append({
+            "_id": str(doc["_id"]),
+            "nombre": doc["nombre"],
+            "email": doc["email"],
+            "rol": doc.get("rol", "cliente"),
+        })
+    return result
+
+
+@router.post("/login", summary="Iniciar sesión")
 async def login(body: LoginBody):
-    db = mongo.get_db()
+    db = mongo.get_db(0)  # usuarios en shard 0
     usuario = await db.usuarios.find_one({"email": body.email})
     if not usuario:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    if usuario.get("password") and body.password != usuario["password"]:
-        raise HTTPException(status_code=401, detail="Credenciales inválidas")
-    elif not usuario.get("password") and body.password != unicodedata.normalize("NFKD", usuario.get("nombre", "")).encode("ascii", "ignore").decode().lower().replace(" ", ""):
+    expected = unicodedata.normalize("NFKD", usuario.get("nombre", "")).encode(
+        "ascii", "ignore"
+    ).decode().lower().replace(" ", "")
+
+    stored_pw = usuario.get("password", "")
+    if stored_pw:
+        if body.password != stored_pw:
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+    elif body.password != expected:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    payload = {"user_id": str(usuario["_id"]), "rol": usuario.get("rol", "cliente")}
-    token = base64.b64encode(json.dumps(payload).encode()).decode()
+    token = await auth_service.crear_sesion(str(usuario["_id"]), usuario.get("rol", "cliente"))
 
     return {
         "token": token,
@@ -59,23 +65,23 @@ async def login(body: LoginBody):
     }
 
 
-@router.get(
-    "/me",
-    summary="Obtener usuario actual",
-    description="Retorna los datos del usuario autenticado según el token enviado en el header Authorization.",
-)
+@router.get("/me", summary="Obtener usuario actual")
 async def get_me(request: Request):
     token = request.headers.get("Authorization", "").replace("Bearer ", "")
     if not token:
         raise HTTPException(status_code=401, detail="No autenticado")
+
+    sesion = await auth_service.validar_sesion(token)
+    if not sesion:
+        raise HTTPException(status_code=401, detail="Sesión expirada o inválida")
+
+    db = mongo.get_db(0)  # usuarios en shard 0
     try:
-        payload = json.loads(base64.b64decode(token).decode())
+        oid = ObjectId(sesion["user_id"])
     except Exception:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-    db = mongo.get_db()
-    from bson import ObjectId
-    usuario = await db.usuarios.find_one({"_id": ObjectId(payload["user_id"])})
+    usuario = await db.usuarios.find_one({"_id": oid})
     if not usuario:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
 
@@ -85,3 +91,11 @@ async def get_me(request: Request):
         "email": usuario["email"],
         "rol": usuario.get("rol", "cliente"),
     }
+
+
+@router.post("/logout", summary="Cerrar sesión")
+async def logout(request: Request):
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if token:
+        await auth_service.eliminar_sesion(token)
+    return {"ok": True}

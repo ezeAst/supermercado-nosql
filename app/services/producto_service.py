@@ -9,7 +9,7 @@ async def get_productos(
     page: int = 1,
     limit: int = 25,
 ) -> dict:
-    db = mongo.get_db()
+    db = mongo.get_db(0)  # productos siempre en shard 0
 
     query: dict = {}
     if pasillo_id:
@@ -28,7 +28,6 @@ async def get_productos(
     }
 
     total = await db.productos.count_documents(query)
-
     skip = (page - 1) * limit
 
     if search:
@@ -36,24 +35,14 @@ async def get_productos(
         cursor = (
             db.productos.find(query, projection)
             .sort([("score", {"$meta": "textScore"})])
-            .skip(skip)
-            .limit(limit)
+            .skip(skip).limit(limit)
         )
     else:
-        cursor = (
-            db.productos.find(query, projection)
-            .skip(skip)
-            .limit(limit)
-        )
+        cursor = db.productos.find(query, projection).skip(skip).limit(limit)
 
     docs = await cursor.to_list(length=limit)
     for doc in docs:
         doc["_id"] = str(doc["_id"])
         doc.pop("score", None)
 
-    return {
-        "items": docs,
-        "total": total,
-        "page": page,
-        "limit": limit,
-    }
+    return {"items": docs, "total": total, "page": page, "limit": limit}

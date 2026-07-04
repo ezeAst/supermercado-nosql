@@ -8,7 +8,7 @@
 
 ## Bloque 1 — Arquitectura + Demo de resiliencia (6–8 min)
 
-> Desde la pantalla de login, click en **"Ver infraestructura (sin sesión)"** y activar auto-refresh cada 5s.
+> Desde la pantalla de login, click en **"Ver infraestructura (sin sesión)"** (`/infra`) y activar auto-refresh cada 5s.
 
 ### Parte A — Demo de elección de primario MongoDB (AP en acción)
 

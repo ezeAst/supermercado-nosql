@@ -15,7 +15,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/?replicaSet=rs0")
+MONGO_URI = os.getenv("MONGO_SHARD0_URI", "mongodb://shard0-primary:27017/?replicaSet=rs0")
 DB_NAME = "supermercado_db"
 
 

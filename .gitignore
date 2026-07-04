@@ -26,3 +26,9 @@ data/order_products__prior.csv
 # OS
 .DS_Store
 Thumbs.db
+
+# Bash
+*.sh
+
+# Keys
+*.pem

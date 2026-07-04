@@ -27,7 +27,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/?replicaSet=rs0")
+MONGO_URI = os.getenv("MONGO_SHARD0_URI", "mongodb://shard0-primary:27017/?replicaSet=rs0")
 DB_NAME = "supermercado_db"
 DATA_DIR = Path("data")
 STATIC_DIR = Path("static")
@@ -297,6 +297,20 @@ async def main() -> None:
 
     print("\n--- Creando índices ---")
     await crear_indices(db)
+
+    # Crear índices de pedidos también en Shard 1
+    print("\n--- Creando índices en Shard 1 ---")
+    MONGO_SHARD1_URI = os.getenv("MONGO_SHARD1_URI", "mongodb://shard1-primary:27019/?replicaSet=rs1")
+    client_shard1 = AsyncIOMotorClient(MONGO_SHARD1_URI)
+    db_shard1 = client_shard1[DB_NAME]
+    await db_shard1.pedidos.create_index(
+        [("usuario_id", 1), ("fecha_creacion", -1)],
+        name="pedidos_usuario_fecha",
+    )
+    await db_shard1.pedidos.create_index("estado", name="pedidos_estado")
+    await db_shard1.pedidos.create_index("idempotency_key", sparse=True, unique=True, name="pedidos_idempotency")
+    print("  OK índices Shard 1")
+    client_shard1.close()
 
     # Guardar usuarios.json para el selector del frontend
     usuarios_path = STATIC_DIR / "usuarios.json"

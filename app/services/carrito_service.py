@@ -28,16 +28,14 @@ async def confirmar_carrito(
     metodo_pago: str,
     idempotency_key: str,
 ) -> tuple[dict, bool]:
-    """Retorna (pedido_serializado, es_duplicado)."""
-    db = mongo.get_db()
+    shard = mongo.shard_for_user(usuario_id)
+    db = mongo.get_db(shard)
     r = redis_db.get_redis()
 
-    # Idempotency: retornar el pedido existente si ya fue procesado
     existing = await db.pedidos.find_one({"idempotency_key": idempotency_key})
     if existing:
         return _jsonable(existing), True
 
-    # Leer carrito desde Redis
     carrito_key = f"carrito:{usuario_id}"
     carrito_raw: dict = await r.hgetall(carrito_key)
 
@@ -49,54 +47,44 @@ async def confirmar_carrito(
     except ValueError:
         raise HTTPException(status_code=400, detail="El carrito contiene cantidades inválidas")
 
-    # Convertir IDs a ObjectId para la consulta
     try:
         oids = [ObjectId(pid) for pid in items]
     except Exception:
         raise HTTPException(status_code=400, detail="El carrito contiene IDs de producto inválidos")
 
-    productos_docs = await db.productos.find({"_id": {"$in": oids}}).to_list(length=None)
+    # Productos en shard 0
+    productos_docs = await mongo.get_db(0).productos.find({"_id": {"$in": oids}}).to_list(length=None)
 
     if len(productos_docs) != len(items):
         found_ids = {str(doc["_id"]) for doc in productos_docs}
         missing = [pid for pid in items if pid not in found_ids]
-        raise HTTPException(
-            status_code=400,
-            detail=f"Productos no encontrados: {', '.join(missing)}",
-        )
+        raise HTTPException(status_code=400, detail=f"Productos no encontrados: {', '.join(missing)}")
 
     productos_map = {str(doc["_id"]): doc for doc in productos_docs}
 
-    # Validar stock
     sin_stock = [
         productos_map[pid]["nombre"]
         for pid, cantidad in items.items()
         if productos_map[pid]["stock"] < cantidad
     ]
     if sin_stock:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Stock insuficiente para: {', '.join(sin_stock)}",
-        )
+        raise HTTPException(status_code=400, detail=f"Stock insuficiente para: {', '.join(sin_stock)}")
 
-    # Construir snapshot de productos
     snapshots = []
     total = 0.0
     for pid, cantidad in items.items():
         doc = productos_map[pid]
         precio = doc["precio"]
-        snapshots.append(
-            {
-                "producto_id": pid,
-                "nombre": doc["nombre"],
-                "precio_unitario": precio,
-                "cantidad": cantidad,
-                "pasillo_id": doc["pasillo_id"],
-                "pasillo_nombre": doc["pasillo_nombre"],
-                "departamento_nombre": doc.get("departamento_nombre", ""),
-                "estado_pasillo": "pendiente",
-            }
-        )
+        snapshots.append({
+            "producto_id": pid,
+            "nombre": doc["nombre"],
+            "precio_unitario": precio,
+            "cantidad": cantidad,
+            "pasillo_id": doc["pasillo_id"],
+            "pasillo_nombre": doc["pasillo_nombre"],
+            "departamento_nombre": doc.get("departamento_nombre", ""),
+            "estado_pasillo": "pendiente",
+        })
         total += precio * cantidad
 
     pedido_doc = {
@@ -116,7 +104,8 @@ async def confirmar_carrito(
     pedido_id_str = str(result.inserted_id)
     await r.set(f"pedido_estado:{pedido_id_str}", "registrado", ex=86400)
 
-    # Eliminar carrito de Redis (fallo no es crítico, TTL de 24h lo limpiará)
+    await mongo.log_shard_op(shard, "write", "pedidos", usuario_id, "confirmar_carrito")
+
     try:
         await r.delete(carrito_key)
     except Exception as exc:
@@ -126,7 +115,6 @@ async def confirmar_carrito(
 
 
 async def set_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> None:
-    """Establece cantidad exacta con HSET. Si cantidad <= 0 elimina el campo con HDEL."""
     r = redis_db.get_redis()
     carrito_key = f"carrito:{usuario_id}"
     if cantidad <= 0:
@@ -137,13 +125,11 @@ async def set_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> 
 
 
 async def remove_item_carrito(usuario_id: str, producto_id: str) -> None:
-    """Elimina un producto del carrito con HDEL. Idempotente."""
     r = redis_db.get_redis()
     await r.hdel(f"carrito:{usuario_id}", producto_id)
 
 
 async def clear_carrito(usuario_id: str) -> None:
-    """Elimina la clave completa del carrito con DEL. Idempotente."""
     r = redis_db.get_redis()
     await r.delete(f"carrito:{usuario_id}")
 
@@ -155,11 +141,10 @@ async def add_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> 
     if nueva_cantidad <= 0:
         await r.hdel(carrito_key, producto_id)
     else:
-        await r.expire(carrito_key, 86400)  # TTL 24h
+        await r.expire(carrito_key, 86400)
 
 
 async def get_carrito(usuario_id: str) -> list:
-    db = mongo.get_db()
     r = redis_db.get_redis()
     carrito_key = f"carrito:{usuario_id}"
     carrito_raw: dict = await r.hgetall(carrito_key)
@@ -171,6 +156,7 @@ async def get_carrito(usuario_id: str) -> list:
     except Exception:
         return []
 
+    db = mongo.get_db(0)
     productos = await db.productos.find({"_id": {"$in": oids}}).to_list(length=None)
     productos_map = {str(doc["_id"]): doc for doc in productos}
 
@@ -180,14 +166,12 @@ async def get_carrito(usuario_id: str) -> list:
         if not doc:
             continue
         cantidad = int(cant_str)
-        items.append(
-            {
-                "producto_id": pid,
-                "nombre": doc["nombre"],
-                "precio_unitario": doc["precio"],
-                "cantidad": cantidad,
-                "subtotal": round(doc["precio"] * cantidad, 2),
-                "pasillo_nombre": doc["pasillo_nombre"],
-            }
-        )
+        items.append({
+            "producto_id": pid,
+            "nombre": doc["nombre"],
+            "precio_unitario": doc["precio"],
+            "cantidad": cantidad,
+            "subtotal": round(doc["precio"] * cantidad, 2),
+            "pasillo_nombre": doc["pasillo_nombre"],
+        })
     return items

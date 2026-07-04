@@ -35,6 +35,8 @@ export const api = {
 
   getMe: () => request<Usuario>('/auth/me'),
 
+  listUsuarios: (rol: string) => request<Usuario[]>(`/auth/usuarios?rol=${rol}`),
+
   // Productos
   getProductos: (params?: { pasillo_id?: string; search?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
@@ -121,6 +123,8 @@ export const api = {
   // Infraestructura
   getReplicaSet: () => request<any>('/infra/mongo/replica-set'),
   getIndices: () => request<any>('/infra/mongo/indices'),
+  getShardOps: () => request<any[]>('/infra/mongo/shard-ops'),
+  getShardForUser: (usuarioId: string) => request<any>(`/infra/mongo/shard-for-user/${usuarioId}`),
   getRedisInfo: () => request<any>('/infra/redis/info'),
   getRedisClaves: () => request<any[]>('/infra/redis/claves'),
 };

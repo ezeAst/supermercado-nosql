@@ -15,28 +15,29 @@ import {
   MenuItem,
 } from '@mui/material';
 import QueueIcon from '@mui/icons-material/Queue';
+import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../contexts/AuthContext';
 import ColaPage from './trabajador/ColaPage';
 import DetallePedidoPage from './trabajador/DetallePedidoPage';
+import PerfilPage from './cliente/PerfilPage';
 
 const DRAWER = 200;
 
 export default function TrabajadorLayout() {
   const { usuario, logout } = useAuth();
-  const [activeCola, setActiveCola] = useState(true);
+  const [activeTab, setActiveTab] = useState('cola');
   const [pedidoId, setPedidoId] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const showDetail = (id: string) => {
     setPedidoId(id);
-    setActiveCola(false);
+    setActiveTab('detalle');
   };
 
   const showCola = () => {
     setPedidoId(null);
-    setActiveCola(true);
+    setActiveTab('cola');
   };
 
   return (
@@ -81,19 +82,35 @@ export default function TrabajadorLayout() {
       >
         <List disablePadding>
           <ListItemButton
-            selected={activeCola}
+            selected={activeTab === 'cola'}
             onClick={showCola}
             sx={{
               mx: 1, borderRadius: 2, my: 0.3,
               '&.Mui-selected': { background: '#FFF3E0', '&:hover': { background: '#FFE0B2' } },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 36, color: activeCola ? '#E65100' : undefined }}>
+            <ListItemIcon sx={{ minWidth: 36, color: activeTab === 'cola' ? '#E65100' : undefined }}>
               <QueueIcon />
             </ListItemIcon>
             <ListItemText
               primary="Cola de Pedidos"
-              primaryTypographyProps={{ fontSize: 14, fontWeight: activeCola ? 600 : 400 }}
+              primaryTypographyProps={{ fontSize: 14, fontWeight: activeTab === 'cola' ? 600 : 400 }}
+            />
+          </ListItemButton>
+          <ListItemButton
+            selected={activeTab === 'perfil'}
+            onClick={() => { setActiveTab('perfil'); setPedidoId(null); }}
+            sx={{
+              mx: 1, borderRadius: 2, my: 0.3,
+              '&.Mui-selected': { background: '#FFF3E0', '&:hover': { background: '#FFE0B2' } },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36, color: activeTab === 'perfil' ? '#E65100' : undefined }}>
+              <PersonIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Mi Perfil"
+              primaryTypographyProps={{ fontSize: 14, fontWeight: activeTab === 'perfil' ? 600 : 400 }}
             />
           </ListItemButton>
         </List>
@@ -103,10 +120,11 @@ export default function TrabajadorLayout() {
         component="main"
         sx={{ flexGrow: 1, p: 3, mt: 8, minHeight: 'calc(100vh - 64px)', background: '#FAFAF8' }}
       >
-        {activeCola && <ColaPage onSelectPedido={showDetail} />}
-        {!activeCola && pedidoId && (
+        {activeTab === 'cola' && <ColaPage onSelectPedido={showDetail} />}
+        {activeTab === 'detalle' && pedidoId && (
           <DetallePedidoPage pedidoId={pedidoId} onBack={showCola} />
         )}
+        {activeTab === 'perfil' && <PerfilPage />}
       </Box>
     </Box>
   );

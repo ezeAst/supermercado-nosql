@@ -1,60 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
-  TextField,
   Button,
   Typography,
   Alert,
   CircularProgress,
+  List,
+  ListItemButton,
+  ListItemAvatar,
+  ListItemText,
+  Avatar,
   Divider,
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ScienceIcon from '@mui/icons-material/Science';
+import PersonIcon from '@mui/icons-material/Person';
+import WarehouseIcon from '@mui/icons-material/Warehouse';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
+import type { Usuario } from '../types';
 
-interface Props {
-  onShowInfra: () => void;
-}
-
-export default function LoginPage({ onShowInfra }: Props) {
+export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [step, setStep] = useState<'rol' | 'usuario'>('rol');
+  const [rol, setRol] = useState<'cliente' | 'trabajador'>('cliente');
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (step === 'usuario') {
+      setLoading(true);
+      setError('');
+      api.listUsuarios(rol)
+        .then(setUsuarios)
+        .catch(() => setUsuarios([]))
+        .finally(() => setLoading(false));
+    }
+  }, [step, rol]);
+
+  const handleLogin = async (u: Usuario) => {
+    setLoading(true);
     setError('');
-    setLoading(true);
     try {
-      await login(email, password);
+      await login(u.email, u.nombre.toLowerCase().replace(/\s/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
     } catch (err: any) {
-      setError(err.message || 'Credenciales inválidas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoCliente = async () => {
-    setLoading(true);
-    try {
-      await login('ana.torres@demo.supermercado.pe', 'anatorres');
-    } catch (err: any) {
-      setError(err.message || 'Error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoTrabajador = async () => {
-    setLoading(true);
-    try {
-      await login('juan.perez@demo.supermercado.pe', 'juanperez');
-    } catch (err: any) {
-      setError(err.message || 'Error');
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -70,7 +65,7 @@ export default function LoginPage({ onShowInfra }: Props) {
         background: 'linear-gradient(135deg, #1B4332 0%, #2D6A4F 50%, #1B4332 100%)',
       }}
     >
-      <Card sx={{ width: 400, maxWidth: '90vw' }}>
+      <Card sx={{ width: 420, maxWidth: '90vw' }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <ShoppingCartIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
@@ -80,41 +75,91 @@ export default function LoginPage({ onShowInfra }: Props) {
             </Typography>
           </Box>
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField size="small" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required fullWidth />
-            <TextField size="small" label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required fullWidth />
-
-            {error && <Alert severity="error" size="small">{error}</Alert>}
-
-            <Button type="submit" variant="contained" color="primary" fullWidth disabled={loading} startIcon={loading ? <CircularProgress size={16} /> : undefined} sx={{ py: 1.2 }}>
-              {loading ? 'Ingresando…' : 'Iniciar sesión'}
-            </Button>
-
-            <Button
-              variant="text"
-              size="small"
-              fullWidth
-              onClick={onShowInfra}
-              startIcon={<ScienceIcon />}
-              sx={{ color: '#5A6577', fontSize: 13 }}
-            >
-              Ver infraestructura (sin sesión)
-            </Button>
-          </Box>
-
-          <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #eaeaea' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, textAlign: 'center' }}>
-              Acceso rápido de demostración
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button variant="outlined" size="small" fullWidth onClick={handleDemoCliente} disabled={loading} sx={{ fontSize: 12 }}>
-                Cliente demo
+          {step === 'rol' ? (
+            <>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+                Selecciona el tipo de usuario
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  sx={{ py: 3, flexDirection: 'column', gap: 1 }}
+                  onClick={() => { setRol('cliente'); setStep('usuario'); }}
+                >
+                  <PersonIcon sx={{ fontSize: 36 }} />
+                  <Typography variant="body2" fontWeight={600}>Cliente</Typography>
+                </Button>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  color="secondary"
+                  sx={{ py: 3, flexDirection: 'column', gap: 1 }}
+                  onClick={() => { setRol('trabajador'); setStep('usuario'); }}
+                >
+                  <WarehouseIcon sx={{ fontSize: 36 }} />
+                  <Typography variant="body2" fontWeight={600}>Trabajador</Typography>
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <>
+              <Button
+                size="small"
+                startIcon={<ArrowBackIcon />}
+                onClick={() => setStep('rol')}
+                sx={{ mb: 1, color: '#5A6577' }}
+              >
+                Volver
               </Button>
-              <Button variant="outlined" size="small" fullWidth color="secondary" onClick={handleDemoTrabajador} disabled={loading} sx={{ fontSize: 12 }}>
-                Trabajador demo
-              </Button>
-            </Box>
-          </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+                Selecciona un usuario {rol === 'cliente' ? 'cliente' : 'trabajador'}
+              </Typography>
+
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <List disablePadding sx={{ maxHeight: 320, overflow: 'auto' }}>
+                  {usuarios.map((u) => (
+                    <ListItemButton
+                      key={u._id}
+                      onClick={() => handleLogin(u)}
+                      disabled={loading}
+                      sx={{ borderRadius: 2, mb: 0.5 }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: rol === 'trabajador' ? '#E76F51' : '#1B4332' }}>
+                          {u.nombre.charAt(0)}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={u.nombre}
+                        secondary={u.email}
+                        primaryTypographyProps={{ fontWeight: 500 }}
+                      />
+                    </ListItemButton>
+                  ))}
+                </List>
+              )}
+
+              {error && <Alert severity="error" size="small" sx={{ mt: 1 }}>{error}</Alert>}
+            </>
+          )}
+
+          <Divider sx={{ my: 2 }} />
+          <Button
+            component={Link}
+            to="/infra"
+            variant="text"
+            size="small"
+            fullWidth
+            startIcon={<ScienceIcon />}
+            sx={{ color: '#5A6577', fontSize: 13 }}
+          >
+            Ver infraestructura (sin sesión)
+          </Button>
         </CardContent>
       </Card>
     </Box>

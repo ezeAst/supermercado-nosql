@@ -62,6 +62,7 @@ export interface ColaItem {
   total: number;
   num_productos: number;
   direccion_entrega?: string;
+  shard?: number;
 }
 
 export interface PasilloPendiente {

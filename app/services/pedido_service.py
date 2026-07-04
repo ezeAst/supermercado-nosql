@@ -36,8 +36,9 @@ async def get_pedidos_usuario(
     limit: int,
     estado: Optional[str],
 ) -> dict:
-    db = mongo.get_db()
-    await _check_usuario(db, usuario_id)
+    shard = mongo.shard_for_user(usuario_id)
+    db = mongo.get_db(shard)
+    await _check_usuario(mongo.get_db(0), usuario_id)
 
     query: dict = {"usuario_id": usuario_id}
     if before is not None:
@@ -46,9 +47,7 @@ async def get_pedidos_usuario(
         query["estado"] = estado
 
     cursor = (
-        db.pedidos
-        .find(query)
-        .hint([("usuario_id", 1), ("fecha_creacion", -1)])
+        db.pedidos.find(query)
         .sort("fecha_creacion", -1)
         .limit(limit + 1)
     )
@@ -64,12 +63,15 @@ async def get_pedidos_usuario(
     if has_more and pedidos:
         siguiente_cursor = pedidos[-1]["fecha_creacion"]
 
+    await mongo.log_shard_op(shard, "read", "pedidos", usuario_id, "historial")
+
     return {"pedidos": pedidos, "siguiente_cursor": siguiente_cursor}
 
 
 async def get_pedido_usuario(usuario_id: str, pedido_id: str) -> dict:
-    db = mongo.get_db()
-    await _check_usuario(db, usuario_id)
+    shard = mongo.shard_for_user(usuario_id)
+    db = mongo.get_db(shard)
+    await _check_usuario(mongo.get_db(0), usuario_id)
 
     try:
         oid = ObjectId(pedido_id)
@@ -86,5 +88,7 @@ async def get_pedido_usuario(usuario_id: str, pedido_id: str) -> dict:
     estado_redis = await r.get(f"pedido_estado:{pedido_id}")
     if estado_redis is not None:
         result["estado_redis"] = estado_redis
+
+    await mongo.log_shard_op(shard, "read", "pedidos", usuario_id, "detalle_pedido")
 
     return result
