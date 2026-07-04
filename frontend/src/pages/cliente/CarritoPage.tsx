@@ -18,9 +18,11 @@ import {
   InputLabel,
   Alert,
   CircularProgress,
-  Divider,
+  IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import type { CarritoItem } from '../../types';
@@ -46,6 +48,27 @@ export default function CarritoPage() {
   useEffect(() => { load(); }, [load]);
 
   const total = items.reduce((s, i) => s + i.subtotal, 0);
+
+  const handleCantidad = async (item: CarritoItem, delta: number) => {
+    if (!usuario) return;
+    const nueva = item.cantidad + delta;
+    if (nueva <= 0) {
+      await handleEliminar(item.producto_id);
+      return;
+    }
+    try {
+      await api.actualizarCantidadCarrito(usuario._id, item.producto_id, nueva);
+      load();
+    } catch {}
+  };
+
+  const handleEliminar = async (prodId: string) => {
+    if (!usuario) return;
+    try {
+      await api.eliminarProductoCarrito(usuario._id, prodId);
+      load();
+    } catch {}
+  };
 
   const handleConfirmar = async () => {
     if (!usuario || !direccion.trim()) return;
@@ -92,10 +115,10 @@ export default function CarritoPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>Producto</TableCell>
-                  <TableCell>Pasillo</TableCell>
                   <TableCell align="center">Cant.</TableCell>
                   <TableCell align="right">Precio Unit.</TableCell>
                   <TableCell align="right">Subtotal</TableCell>
+                  <TableCell width={80}></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -115,13 +138,27 @@ export default function CarritoPage() {
                   items.map((i) => (
                     <TableRow key={i.producto_id}>
                       <TableCell sx={{ fontWeight: 500 }}>{i.nombre}</TableCell>
-                      <TableCell sx={{ color: '#5A6577' }}>{i.pasillo_nombre}</TableCell>
-                      <TableCell align="center">{i.cantidad}</TableCell>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                          <IconButton size="small" onClick={() => handleCantidad(i, -1)}>
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                          <Typography sx={{ minWidth: 20, textAlign: 'center' }}>{i.cantidad}</Typography>
+                          <IconButton size="small" onClick={() => handleCantidad(i, 1)}>
+                            <AddIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
                       <TableCell align="right" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
                         S/ {i.precio_unitario.toFixed(2)}
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                         S/ {i.subtotal.toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton size="small" color="error" onClick={() => handleEliminar(i.producto_id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))

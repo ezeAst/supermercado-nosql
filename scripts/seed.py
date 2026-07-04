@@ -237,7 +237,7 @@ async def crear_indices(db) -> None:
     await db.departamentos.create_index("nombre")
     await db.productos.create_index("pasillo_id")
     await db.productos.create_index("departamento_id")
-    await db.productos.create_index("nombre")
+    await db.productos.create_index([("nombre", "text")], name="productos_nombre_text")
     await db.pedidos.create_index(
         [("usuario_id", 1), ("fecha_creacion", -1)],
         name="pedidos_usuario_fecha",

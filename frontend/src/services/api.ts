@@ -36,12 +36,14 @@ export const api = {
   getMe: () => request<Usuario>('/auth/me'),
 
   // Productos
-  getProductos: (params?: { pasillo_id?: string; search?: string }) => {
+  getProductos: (params?: { pasillo_id?: string; search?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.pasillo_id) q.set('pasillo_id', params.pasillo_id);
     if (params?.search) q.set('search', params.search);
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
     const qs = q.toString();
-    return request<any[]>(`/productos${qs ? `?${qs}` : ''}`);
+    return request<any>(`/productos${qs ? `?${qs}` : ''}`);
   },
 
   // Carrito
@@ -53,6 +55,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ producto_id: productoId, cantidad }),
     }),
+
+  actualizarCantidadCarrito: (usuarioId: string, productoId: string, cantidad: number) =>
+    request(`/carritos/${usuarioId}/productos/${productoId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ cantidad }),
+    }),
+
+  eliminarProductoCarrito: (usuarioId: string, productoId: string) =>
+    request(`/carritos/${usuarioId}/productos/${productoId}`, { method: 'DELETE' }),
 
   vaciarCarrito: (usuarioId: string) =>
     request(`/carritos/${usuarioId}`, { method: 'DELETE' }),

@@ -6,7 +6,9 @@ from app.db import mongo
 async def get_productos(
     pasillo_id: Optional[str] = None,
     search: Optional[str] = None,
-) -> list:
+    page: int = 1,
+    limit: int = 25,
+) -> dict:
     db = mongo.get_db()
 
     query: dict = {}
@@ -25,18 +27,33 @@ async def get_productos(
         "departamento_nombre": 1,
     }
 
+    total = await db.productos.count_documents(query)
+
+    skip = (page - 1) * limit
+
     if search:
         projection["score"] = {"$meta": "textScore"}
         cursor = (
             db.productos.find(query, projection)
             .sort([("score", {"$meta": "textScore"})])
-            .limit(500)
+            .skip(skip)
+            .limit(limit)
         )
     else:
-        cursor = db.productos.find(query, projection).limit(500)
+        cursor = (
+            db.productos.find(query, projection)
+            .skip(skip)
+            .limit(limit)
+        )
 
-    docs = await cursor.to_list(length=500)
+    docs = await cursor.to_list(length=limit)
     for doc in docs:
         doc["_id"] = str(doc["_id"])
         doc.pop("score", None)
-    return docs
+
+    return {
+        "items": docs,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
