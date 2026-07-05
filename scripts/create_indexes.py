@@ -21,7 +21,7 @@ DB_NAME = "supermercado_db"
 
 async def main() -> None:
     print(f"Conectando a {MONGO_URI} ({DB_NAME})...")
-    client = AsyncIOMotorClient(MONGO_URI)
+    client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     db = client[DB_NAME]
 
     # ── usuarios ─────────────────────────────────────────────────────────────

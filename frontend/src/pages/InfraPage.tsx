@@ -121,11 +121,15 @@ export default function InfraPage() {
                       <Typography color="error" variant="body2">Error: {shard.error}</Typography>
                     ) : (
                       <>
-                        <Typography variant="body2" fontWeight={600}>Replica set: {shard.replica_set}</Typography>
-                        <Typography variant="body2">Pedidos: <strong>{shard.total_pedidos}</strong></Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body2" fontWeight={600}>Replica set: {shard.replica_set}</Typography>
+                          <Typography variant="body2">
+                            Pedidos: <strong>{shard.total_pedidos === -1 ? '—' : shard.total_pedidos}</strong>
+                          </Typography>
+                        </Box>
                         <Box sx={{ mt: 1 }}>
                           {shard.members?.map((m: any) => (
-                            <Box key={m.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+                            <Box key={m.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, flexWrap: 'wrap' }}>
                               <Chip label={m.state} size="small" sx={{
                                 fontWeight: 700, fontSize: 10,
                                 bgcolor: m.state === 'PRIMARY' ? '#1B4332' : '#E0E0E0',
@@ -134,6 +138,14 @@ export default function InfraPage() {
                               <Typography variant="caption" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
                                 {m.name}
                               </Typography>
+                              <Typography variant="caption" sx={{ fontSize: 11, color: m.health === 1 ? '#2E7D32' : '#C62828' }}>
+                                {m.health === 1 ? '✅ Up' : '❌ Down'}
+                              </Typography>
+                              {m.lag_segundos !== null && m.lag_segundos !== undefined && (
+                                <Typography variant="caption" sx={{ fontSize: 11, color: '#E65100' }}>
+                                  lag: {m.lag_segundos}s
+                                </Typography>
+                              )}
                             </Box>
                           ))}
                         </Box>

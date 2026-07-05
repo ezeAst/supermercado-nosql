@@ -37,6 +37,16 @@ services:
     networks:
       - supermercado-net
 
+  shard0-secondary2:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - shard0-secondary2-data:/data/db
+    depends_on:
+      - shard0-primary
+    networks:
+      - supermercado-net
+
   shard1-primary:
     image: mongo:6.0
     command: ["--replSet", "rs1", "--bind_ip_all", "--port", "27019"]
@@ -57,25 +67,38 @@ services:
     networks:
       - supermercado-net
 
+  shard1-secondary2:
+    image: mongo:6.0
+    command: ["--replSet", "rs1", "--bind_ip_all", "--port", "27019"]
+    volumes:
+      - shard1-secondary2-data:/data/db
+    depends_on:
+      - shard1-primary
+    networks:
+      - supermercado-net
+
   mongo-init:
     image: mongo:6.0
     depends_on:
       - shard0-primary
       - shard0-secondary
+      - shard0-secondary2
       - shard1-primary
       - shard1-secondary
+      - shard1-secondary2
     networks:
       - supermercado-net
     restart: "no"
     command: >
       sh -c "
-        sleep 10 &&
+        sleep 12 &&
         mongosh --host shard0-primary:27017 --eval '
           rs.initiate({
             _id:\"rs0\",
             members:[
               {_id:0, host:\"shard0-primary:27017\", priority:2},
-              {_id:1, host:\"shard0-secondary:27017\", priority:1}
+              {_id:1, host:\"shard0-secondary:27017\", priority:1},
+              {_id:2, host:\"shard0-secondary2:27017\", priority:1}
             ]
           })
         ' 2>/dev/null; echo 'Shard 0 OK' &&
@@ -84,7 +107,8 @@ services:
             _id:\"rs1\",
             members:[
               {_id:0, host:\"shard1-primary:27019\", priority:2},
-              {_id:1, host:\"shard1-secondary:27019\", priority:1}
+              {_id:1, host:\"shard1-secondary:27019\", priority:1},
+              {_id:2, host:\"shard1-secondary2:27019\", priority:1}
             ]
           })
         ' 2>/dev/null; echo 'Shard 1 OK'
@@ -129,6 +153,8 @@ networks:
 volumes:
   shard0-primary-data:
   shard0-secondary-data:
+  shard0-secondary2-data:
   shard1-primary-data:
   shard1-secondary-data:
+  shard1-secondary2-data:
   redis-master-data:

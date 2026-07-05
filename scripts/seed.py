@@ -272,7 +272,7 @@ async def main() -> None:
 
     STATIC_DIR.mkdir(exist_ok=True)
 
-    client = AsyncIOMotorClient(MONGO_URI)
+    client = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     db = client[DB_NAME]
 
     print("\nLimpiando colecciones existentes...")
@@ -301,7 +301,7 @@ async def main() -> None:
     # Crear índices de pedidos también en Shard 1
     print("\n--- Creando índices en Shard 1 ---")
     MONGO_SHARD1_URI = os.getenv("MONGO_SHARD1_URI", "mongodb://shard1-primary:27019/?replicaSet=rs1")
-    client_shard1 = AsyncIOMotorClient(MONGO_SHARD1_URI)
+    client_shard1 = AsyncIOMotorClient(MONGO_SHARD1_URI, serverSelectionTimeoutMS=5000)
     db_shard1 = client_shard1[DB_NAME]
     await db_shard1.pedidos.create_index(
         [("usuario_id", 1), ("fecha_creacion", -1)],

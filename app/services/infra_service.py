@@ -1,5 +1,8 @@
 import json
 import logging
+import os
+
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.db import mongo
 from app.db import redis as redis_db
@@ -12,7 +15,9 @@ async def get_mongo_replica_set() -> dict:
 
     for sid in range(mongo.SHARDS):
         try:
-            client = mongo.get_client(sid)
+            uri = os.getenv(f"MONGO_SHARD{sid}_URI")
+            # Cliente temporal con timeout corto para health check
+            client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000, readPreference="secondaryPreferred")
             status = await client.admin.command("replSetGetStatus")
             members = []
             for m in status.get("members", []):
@@ -38,7 +43,11 @@ async def get_mongo_replica_set() -> dict:
                     "lag_segundos": lag,
                 })
 
-            count = await mongo.get_db(sid).pedidos.count_documents({})
+            try:
+                db = client["supermercado_db"]
+                count = await db.pedidos.count_documents({})
+            except Exception:
+                count = -1
 
             result["shards"].append({
                 "shard_id": sid,
@@ -46,6 +55,7 @@ async def get_mongo_replica_set() -> dict:
                 "members": members,
                 "total_pedidos": count,
             })
+            client.close()
         except Exception as e:
             result["shards"].append({"shard_id": sid, "error": str(e)})
             logger.warning("Error getting shard %d status: %s", sid, e)
