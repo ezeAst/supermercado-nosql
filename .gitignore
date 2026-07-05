@@ -13,10 +13,14 @@ env/
 
 # Entorno
 .env
+.env.production
 
 # Datos grandes (>100 MB — no permitidos por GitHub)
 data/orders.csv
 data/order_products__prior.csv
+
+# Node
+frontend/node_modules/
 
 # IDEs
 .vscode/
@@ -30,5 +34,8 @@ Thumbs.db
 # Bash
 *.sh
 
+# Deploy
+/deploy
+
 # Keys
-*.pem
+deploy/*.pem

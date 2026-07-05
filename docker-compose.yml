@@ -23,7 +23,17 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - shard0-data:/data/db
+      - shard0-primary-data:/data/db
+    networks:
+      - supermercado-net
+
+  shard0-secondary:
+    image: mongo:6.0
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - shard0-secondary-data:/data/db
+    depends_on:
+      - shard0-primary
     networks:
       - supermercado-net
 
@@ -33,7 +43,17 @@ services:
     ports:
       - "27019:27019"
     volumes:
-      - shard1-data:/data/db
+      - shard1-primary-data:/data/db
+    networks:
+      - supermercado-net
+
+  shard1-secondary:
+    image: mongo:6.0
+    command: ["--replSet", "rs1", "--bind_ip_all", "--port", "27019"]
+    volumes:
+      - shard1-secondary-data:/data/db
+    depends_on:
+      - shard1-primary
     networks:
       - supermercado-net
 
@@ -41,15 +61,33 @@ services:
     image: mongo:6.0
     depends_on:
       - shard0-primary
+      - shard0-secondary
       - shard1-primary
+      - shard1-secondary
     networks:
       - supermercado-net
     restart: "no"
     command: >
       sh -c "
-        sleep 8 &&
-        mongosh --host shard0-primary:27017 --eval 'rs.initiate({_id:\"rs0\",members:[{_id:0,host:\"shard0-primary:27017\"}]})' 2>/dev/null; echo 'Shard 0 OK' &&
-        mongosh --host shard1-primary:27019 --eval 'rs.initiate({_id:\"rs1\",members:[{_id:0,host:\"shard1-primary:27019\"}]})' 2>/dev/null; echo 'Shard 1 OK'
+        sleep 10 &&
+        mongosh --host shard0-primary:27017 --eval '
+          rs.initiate({
+            _id:\"rs0\",
+            members:[
+              {_id:0, host:\"shard0-primary:27017\", priority:2},
+              {_id:1, host:\"shard0-secondary:27017\", priority:1}
+            ]
+          })
+        ' 2>/dev/null; echo 'Shard 0 OK' &&
+        mongosh --host shard1-primary:27019 --eval '
+          rs.initiate({
+            _id:\"rs1\",
+            members:[
+              {_id:0, host:\"shard1-primary:27019\", priority:2},
+              {_id:1, host:\"shard1-secondary:27019\", priority:1}
+            ]
+          })
+        ' 2>/dev/null; echo 'Shard 1 OK'
       "
 
   frontend:
@@ -89,6 +127,8 @@ networks:
     driver: bridge
 
 volumes:
-  shard0-data:
-  shard1-data:
+  shard0-primary-data:
+  shard0-secondary-data:
+  shard1-primary-data:
+  shard1-secondary-data:
   redis-master-data:

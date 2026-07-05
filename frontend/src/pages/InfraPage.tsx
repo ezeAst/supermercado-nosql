@@ -127,9 +127,9 @@ export default function InfraPage() {
                           {shard.members?.map((m: any) => (
                             <Box key={m.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
                               <Chip label={m.state} size="small" sx={{
-                                fontWeight: 600, fontSize: 10,
-                                bgcolor: m.state === 'PRIMARY' ? '#E8F5E9' : '#F5F5F5',
-                                color: m.state === 'PRIMARY' ? '#2E7D32' : '#757575',
+                                fontWeight: 700, fontSize: 10,
+                                bgcolor: m.state === 'PRIMARY' ? '#1B4332' : '#E0E0E0',
+                                color: m.state === 'PRIMARY' ? '#fff' : '#424242',
                               }} />
                               <Typography variant="caption" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
                                 {m.name}

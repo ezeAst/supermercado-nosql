@@ -80,20 +80,19 @@ export default function ColaPage({ onSelectPedido }: Props) {
                   <TableCell align="center">Productos</TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell>Estado</TableCell>
-                  <TableCell align="center">Shard</TableCell>
                   <TableCell width={80}></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
+                      <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
                         Cargando…
                       </TableCell>
                   </TableRow>
                 ) : cola.length === 0 ? (
                   <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
+                  <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
                     No hay pedidos{ filtroEstado ? ` en estado "${filtroEstado}"` : ' pendientes' }.
                   </TableCell>
                   </TableRow>
@@ -117,17 +116,6 @@ export default function ColaPage({ onSelectPedido }: Props) {
                             label={p.estado}
                             size="small"
                             sx={{ fontWeight: 600, fontSize: 11, ...badgeStyles[p.estado] }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={`S${p.shard}`}
-                            size="small"
-                            sx={{
-                              fontWeight: 700, fontSize: 11, fontFamily: '"JetBrains Mono", monospace',
-                              bgcolor: p.shard === 0 ? '#E3F2FD' : '#FFF3E0',
-                              color: p.shard === 0 ? '#1565C0' : '#E65100',
-                            }}
                           />
                         </TableCell>
                         <TableCell>
