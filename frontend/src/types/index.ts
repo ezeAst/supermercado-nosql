@@ -61,6 +61,7 @@ export interface ColaItem {
   estado: string;
   total: number;
   num_productos: number;
+  usuario_id?: string;
   direccion_entrega?: string;
   shard?: number;
 }

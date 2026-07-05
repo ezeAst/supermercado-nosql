@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.db import mongo
+from app.db import redis as redis_db
 from app.services import infra_service
 
 router = APIRouter(prefix="/api/v1/infra", tags=["Infraestructura NoSQL"])
@@ -35,3 +36,12 @@ async def get_redis_info():
 @router.get("/redis/claves", summary="Claves Redis activas con TTL")
 async def get_redis_claves():
     return await infra_service.get_redis_claves()
+
+
+@router.delete("/redis/claves/{clave:path}", summary="Eliminar una clave Redis")
+async def delete_redis_clave(clave: str):
+    r = redis_db.get_redis()
+    result = await r.delete(clave)
+    if result == 0:
+        raise HTTPException(status_code=404, detail="Clave no encontrada")
+    return {"ok": True, "clave": clave}

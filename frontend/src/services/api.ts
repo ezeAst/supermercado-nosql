@@ -125,6 +125,8 @@ export const api = {
   getIndices: () => request<any>('/infra/mongo/indices'),
   getShardOps: () => request<any[]>('/infra/mongo/shard-ops'),
   getShardForUser: (usuarioId: string) => request<any>(`/infra/mongo/shard-for-user/${usuarioId}`),
+  deleteRedisClave: (clave: string) =>
+    request<any>(`/infra/redis/claves/${encodeURIComponent(clave)}`, { method: 'DELETE' }),
   getRedisInfo: () => request<any>('/infra/redis/info'),
   getRedisClaves: () => request<any[]>('/infra/redis/claves'),
 };

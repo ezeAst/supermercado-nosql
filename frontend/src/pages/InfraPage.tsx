@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ScienceIcon from '@mui/icons-material/Science';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -75,6 +76,13 @@ export default function InfraPage() {
       setRuteoResult(data.shard);
     } catch { setRuteoResult(null); }
     setRuteoLoading(false);
+  };
+
+  const handleDeleteClave = async (clave: string) => {
+    try {
+      await api.deleteRedisClave(clave);
+      setClaves((prev) => prev.filter((c) => c.clave !== clave));
+    } catch {}
   };
 
   return (
@@ -190,7 +198,7 @@ export default function InfraPage() {
                       <TableCell>Shard</TableCell>
                       <TableCell>Op</TableCell>
                       <TableCell>Colección</TableCell>
-                      <TableCell>Detalle</TableCell>
+                      <TableCell>Descripción</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -322,11 +330,12 @@ export default function InfraPage() {
                   <TableCell>Tipo</TableCell>
                   <TableCell align="right">TTL (s)</TableCell>
                   <TableCell>Valor resumido</TableCell>
+                  <TableCell width={50}></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {claves.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} align="center" sx={{ color: '#888', fontStyle: 'italic' }}>Sin claves activas.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} align="center" sx={{ color: '#888', fontStyle: 'italic' }}>Sin claves activas.</TableCell></TableRow>
                 ) : (
                   claves.map((c) => (
                     <TableRow key={c.clave}>
@@ -336,6 +345,11 @@ export default function InfraPage() {
                         {c.ttl_segundos === -1 ? '∞' : c.ttl_segundos === -2 ? '(expirada)' : c.ttl_segundos}
                       </TableCell>
                       <TableCell sx={{ color: '#555', maxWidth: 340, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.valor_resumen || '—'}</TableCell>
+                      <TableCell>
+                        <IconButton size="small" color="error" onClick={() => handleDeleteClave(c.clave)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

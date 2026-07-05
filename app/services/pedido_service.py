@@ -73,12 +73,10 @@ async def get_pedido_usuario(usuario_id: str, pedido_id: str) -> dict:
     r = redis_db.get_redis()
 
     # Intentar desde cache Redis primero
-    cached = await r.get(f"pedido:{pedido_id}")
+    cached = await r.get(f"pedido_estado:{pedido_id}")
     if cached:
         result = json.loads(cached)
-        estado_redis = await r.get(f"pedido_estado:{pedido_id}")
-        if estado_redis is not None:
-            result["estado_redis"] = estado_redis
+        result["estado_redis"] = result.get("estado", "registrado")
         await mongo.log_shard_op(mongo.shard_for_user(usuario_id), "read", "pedidos(cache)", usuario_id, "detalle_pedido")
         return result
 
@@ -99,7 +97,7 @@ async def get_pedido_usuario(usuario_id: str, pedido_id: str) -> dict:
     result = _jsonable(doc)
 
     # Guardar en cache Redis para próxima vez
-    await r.set(f"pedido:{pedido_id}", json.dumps(result), ex=86400)
+    await r.set(f"pedido_estado:{pedido_id}", json.dumps(result), ex=86400)
 
     estado_redis = await r.get(f"pedido_estado:{pedido_id}")
     if estado_redis is not None:

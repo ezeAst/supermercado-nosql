@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Optional
 
 from bson import ObjectId
@@ -15,6 +16,8 @@ ESTADOS_PRODUCTO = {"pendiente", "en_pasillo", "listo"}
 def _jsonable(obj):
     if isinstance(obj, ObjectId):
         return str(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
     if isinstance(obj, dict):
         return {k: _jsonable(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -142,13 +145,9 @@ async def get_pedido_detalle(pedido_id: str) -> dict:
     r = redis_db.get_redis()
 
     # Intentar desde cache Redis primero
-    cached = await r.get(f"pedido:{pedido_id}")
+    cached = await r.get(f"pedido_estado:{pedido_id}")
     if cached:
-        result = json.loads(cached)
-        estado_redis = await r.get(f"pedido_estado:{pedido_id}")
-        if estado_redis is not None:
-            result["estado_redis"] = estado_redis
-        return result
+        return json.loads(cached)
 
     # Fallback a MongoDB
     doc, sid = await _get_pedido_from_all_shards(pedido_id)
@@ -159,11 +158,10 @@ async def get_pedido_detalle(pedido_id: str) -> dict:
     result["shard"] = sid
 
     # Guardar en cache Redis (incluyendo shard)
-    await r.set(f"pedido:{pedido_id}", json.dumps(result), ex=86400)
+    await r.set(f"pedido_estado:{pedido_id}", json.dumps(result), ex=86400)
 
-    estado_redis = await r.get(f"pedido_estado:{pedido_id}")
-    if estado_redis is not None:
-        result["estado_redis"] = estado_redis
+    uid = doc.get("usuario_id", "")
+    await mongo.log_shard_op(sid, "read", "pedidos", uid, "detalle")
 
     return result
 
@@ -187,11 +185,8 @@ async def actualizar_estado_pedido(pedido_id: str, nuevo_estado: str) -> dict:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
     r = redis_db.get_redis()
-    await r.set(f"pedido_estado:{pedido_id}", nuevo_estado, ex=86400)
-
-    # Actualizar cache Redis
     doc["estado"] = nuevo_estado
-    await r.set(f"pedido:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
+    await r.set(f"pedido_estado:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
 
     uid = doc.get("usuario_id", "")
     await mongo.log_shard_op(sid, "write", "pedidos", uid, f"cambiar_estado:{nuevo_estado}")
@@ -232,8 +227,6 @@ async def actualizar_estado_producto(pedido_id: str, producto_id: str, nuevo_est
 
     if todos_listos:
         await db.pedidos.update_one({"_id": oid}, {"$set": {"estado": "listo_para_despacho"}})
-        r = redis_db.get_redis()
-        await r.set(f"pedido_estado:{pedido_id}", "listo_para_despacho", ex=86400)
         order_estado = "listo_para_despacho"
 
     uid = doc.get("usuario_id", "")
@@ -243,7 +236,7 @@ async def actualizar_estado_producto(pedido_id: str, producto_id: str, nuevo_est
     if todos_listos:
         doc = await db.pedidos.find_one({"_id": oid})
     r = redis_db.get_redis()
-    await r.set(f"pedido:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
+    await r.set(f"pedido_estado:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
 
     return {
         "pedido_id": pedido_id,

@@ -77,6 +77,7 @@ export default function ColaPage({ onSelectPedido }: Props) {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Fecha</TableCell>
+                  <TableCell>Cliente</TableCell>
                   <TableCell align="center">Productos</TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell>Estado</TableCell>
@@ -86,13 +87,13 @@ export default function ColaPage({ onSelectPedido }: Props) {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
+                      <TableCell colSpan={7} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
                         Cargando…
                       </TableCell>
                   </TableRow>
                 ) : cola.length === 0 ? (
                   <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
                     No hay pedidos{ filtroEstado ? ` en estado "${filtroEstado}"` : ' pendientes' }.
                   </TableCell>
                   </TableRow>
@@ -107,6 +108,9 @@ export default function ColaPage({ onSelectPedido }: Props) {
                           {p._id.slice(-8)}
                         </TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{fecha}</TableCell>
+                        <TableCell sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12 }}>
+                          {p.usuario_id?.slice(-8)}
+                        </TableCell>
                         <TableCell align="center">{p.num_productos}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                           S/ {p.total.toFixed(2)}
