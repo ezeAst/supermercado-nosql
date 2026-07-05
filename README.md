@@ -5,7 +5,8 @@ Plataforma de supermercado online con FastAPI, MongoDB (replica set) y Redis (ma
 ## Stack
 
 - **API**: Python 3.11 + FastAPI + Uvicorn
-- **Base de datos**: MongoDB 6.0 (replica set: 1 primario + 2 secundarios)
+- **React**: React 19.0.0 + Vite
+- **Base de datos**: MongoDB 6.0 (2 shards - replica set: 1 primario + 2 secundarios)
 - **Caché / Carrito**: Redis 7 (maestro + réplica)
 - **Infraestructura**: Docker + Docker Compose
 
@@ -33,7 +34,7 @@ cp .env.example .env
 
 ### 3. Subir los datos de Instacart (solo la primera vez)
 
-Los archivos CSV grandes (`orders.csv`, `order_products__prior.csv`) **no están en el repo** por su tamaño (>100 MB). Descárgalos desde [Kaggle - Instacart Market Basket Analysis](https://www.kaggle.com/competitions/instacart-market-basket-analysis/data) y colócalos en la carpeta `data/`:
+Los archivos CSV grandes (`orders.csv`, `order_products__prior.csv`) **no están en el repo** por su tamaño (>100 MB). Descárgalos desde [Kaggle - Instacart Market Basket Analysis](https://www.kaggle.com/datasets/psparks/instacart-market-basket-analysis) y colócalos en la carpeta `data/`:
 
 ```
 data/
@@ -69,7 +70,7 @@ docker compose exec api python scripts/create_indexes.py
 
 | Recurso | URL |
 |---------|-----|
-| Frontend demo | http://localhost:5173 |
+| Frontend demo | http://localhost:8001 |
 | API docs (Swagger) | http://localhost:8000/docs |
 | API docs (Redoc) | http://localhost:8000/redoc |
 
@@ -107,8 +108,8 @@ supermercado-nosql/
 | Clave | Tipo | TTL |
 |-------|------|-----|
 | `carrito:{usuario_id}` | Hash | 24 h |
-| `pedido_estado:{pedido_id}` | String | — |
-| `sesion:{usuario_id}` | String | — |
+| `pedido_estado:{pedido_id}` | String | 24 h |
+| `sesion:{usuario_id}` | String | 24 h |
 
 ## Detener el proyecto
 
@@ -121,3 +122,30 @@ Para eliminar también los volúmenes (borra los datos):
 ```bash
 docker compose down -v
 ```
+
+## Prueba caida de primary en MongoDB
+
+```bash
+docker stop supermercado-nosql-shard0-primary-1
+```
+
+```bash
+docker start supermercado-nosql-shard0-primary-1
+```
+
+## Probar lectura desde replica Redis
+
+Escribir en el redis
+
+```bash
+docker exec supermercado-nosql-redis-master-1 redis-cli SET demo:clave "hola desde master"
+```
+
+```bash
+docker exec supermercado-nosql-redis-replica-1 redis-cli GET demo:clave
+```
+
+```bash
+docker exec supermercado-nosql-redis-master-1 redis-cli DEL demo:clave
+```
+
