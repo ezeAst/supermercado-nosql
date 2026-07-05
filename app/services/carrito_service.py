@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -103,6 +104,10 @@ async def confirmar_carrito(
 
     pedido_id_str = str(result.inserted_id)
     await r.set(f"pedido_estado:{pedido_id_str}", "registrado", ex=86400)
+
+    # Cache pedido completo en Redis
+    pedido_json = _jsonable(pedido_doc)
+    await r.set(f"pedido:{pedido_id_str}", json.dumps(pedido_json), ex=86400)
 
     await mongo.log_shard_op(shard, "write", "pedidos", usuario_id, "confirmar_carrito")
 

@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from bson import ObjectId
@@ -138,14 +139,29 @@ async def get_pedidos_cola(estado_filter: Optional[str] = None) -> list:
 
 
 async def get_pedido_detalle(pedido_id: str) -> dict:
+    r = redis_db.get_redis()
+
+    # Intentar desde cache Redis primero
+    cached = await r.get(f"pedido:{pedido_id}")
+    if cached:
+        result = json.loads(cached)
+        estado_redis = await r.get(f"pedido_estado:{pedido_id}")
+        if estado_redis is not None:
+            result["estado_redis"] = estado_redis
+        return result
+
+    # Fallback a MongoDB
     doc, sid = await _get_pedido_from_all_shards(pedido_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
 
-    r = redis_db.get_redis()
-    estado_redis = await r.get(f"pedido_estado:{pedido_id}")
     result = _jsonable(doc)
     result["shard"] = sid
+
+    # Guardar en cache Redis (incluyendo shard)
+    await r.set(f"pedido:{pedido_id}", json.dumps(result), ex=86400)
+
+    estado_redis = await r.get(f"pedido_estado:{pedido_id}")
     if estado_redis is not None:
         result["estado_redis"] = estado_redis
 
@@ -172,6 +188,10 @@ async def actualizar_estado_pedido(pedido_id: str, nuevo_estado: str) -> dict:
 
     r = redis_db.get_redis()
     await r.set(f"pedido_estado:{pedido_id}", nuevo_estado, ex=86400)
+
+    # Actualizar cache Redis
+    doc["estado"] = nuevo_estado
+    await r.set(f"pedido:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
 
     uid = doc.get("usuario_id", "")
     await mongo.log_shard_op(sid, "write", "pedidos", uid, f"cambiar_estado:{nuevo_estado}")
@@ -218,6 +238,12 @@ async def actualizar_estado_producto(pedido_id: str, producto_id: str, nuevo_est
 
     uid = doc.get("usuario_id", "")
     await mongo.log_shard_op(sid, "write", "pedidos", uid, f"toggle_producto:{producto_id}->{nuevo_estado}")
+
+    # Actualizar cache Redis (re-leer doc si cambió estado)
+    if todos_listos:
+        doc = await db.pedidos.find_one({"_id": oid})
+    r = redis_db.get_redis()
+    await r.set(f"pedido:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
 
     return {
         "pedido_id": pedido_id,

@@ -1,5 +1,5 @@
 import { Box, CircularProgress } from '@mui/material';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import ClienteLayout from './pages/ClienteLayout';
@@ -20,15 +20,10 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/infra" element={<InfraPage />} />
-      <Route
-        path="/app/*"
-        element={
-          !usuario ? <Navigate to="/" replace /> :
-          usuario.rol === 'trabajador' ? <TrabajadorLayout /> : <ClienteLayout />
-        }
-      />
-      <Route path="/" element={usuario ? <Navigate to="/app" replace /> : <LoginPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/trabajador" element={<TrabajadorLayout />} />
+      <Route path="/app/*" element={!usuario ? <LoginPage /> : <ClienteLayout />} />
+      <Route path="/" element={usuario ? <ClienteLayout /> : <LoginPage />} />
+      <Route path="*" element={usuario ? <ClienteLayout /> : <LoginPage />} />
     </Routes>
   );
 }

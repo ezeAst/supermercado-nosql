@@ -19,13 +19,14 @@ import ScienceIcon from '@mui/icons-material/Science';
 import PersonIcon from '@mui/icons-material/Person';
 import WarehouseIcon from '@mui/icons-material/Warehouse';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import type { Usuario } from '../types';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState<'rol' | 'usuario'>('rol');
   const [rol, setRol] = useState<'cliente' | 'trabajador'>('cliente');
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -95,7 +96,7 @@ export default function LoginPage() {
                   fullWidth
                   color="secondary"
                   sx={{ py: 3, flexDirection: 'column', gap: 1 }}
-                  onClick={() => { setRol('trabajador'); setStep('usuario'); }}
+                  onClick={() => navigate('/trabajador')}
                 >
                   <WarehouseIcon sx={{ fontSize: 36 }} />
                   <Typography variant="body2" fontWeight={600}>Trabajador</Typography>
