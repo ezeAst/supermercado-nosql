@@ -105,6 +105,7 @@ async def confirmar_carrito(
     pedido_id_str = str(result.inserted_id)
     pedido_json = _jsonable(pedido_doc)
     await r.set(f"pedido_estado:{pedido_id_str}", json.dumps(pedido_json), ex=86400)
+    await redis_db.log_redis_op(f"pedido_estado:{pedido_id_str}", "write", "confirmar_carrito")
 
     await mongo.log_shard_op(shard, "write", "pedidos", usuario_id, "confirmar_carrito")
 
@@ -124,16 +125,19 @@ async def set_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> 
     else:
         await r.hset(carrito_key, producto_id, cantidad)
         await r.expire(carrito_key, 86400)
+    await redis_db.log_redis_op(carrito_key, "write", f"set_item:{producto_id}->{cantidad}")
 
 
 async def remove_item_carrito(usuario_id: str, producto_id: str) -> None:
     r = redis_db.get_redis()
     await r.hdel(f"carrito:{usuario_id}", producto_id)
+    await redis_db.log_redis_op(f"carrito:{usuario_id}", "write", f"remove_item:{producto_id}")
 
 
 async def clear_carrito(usuario_id: str) -> None:
     r = redis_db.get_redis()
     await r.delete(f"carrito:{usuario_id}")
+    await redis_db.log_redis_op(f"carrito:{usuario_id}", "write", "clear_carrito")
 
 
 async def add_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> None:
@@ -144,6 +148,7 @@ async def add_item_carrito(usuario_id: str, producto_id: str, cantidad: int) -> 
         await r.hdel(carrito_key, producto_id)
     else:
         await r.expire(carrito_key, 86400)
+    await redis_db.log_redis_op(carrito_key, "write", f"add_item:{producto_id}->{nueva_cantidad}")
 
 
 async def get_carrito(usuario_id: str) -> list:
@@ -152,6 +157,7 @@ async def get_carrito(usuario_id: str) -> list:
     carrito_raw: dict = await r.hgetall(carrito_key)
     if not carrito_raw:
         return []
+    await redis_db.log_redis_op(carrito_key, "read", f"get_carrito:{len(carrito_raw)}_items")
 
     try:
         oids = [ObjectId(pid) for pid in carrito_raw]

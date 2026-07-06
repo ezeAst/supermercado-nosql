@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Fab,
   Table,
   TableBody,
   TableCell,
@@ -26,6 +27,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ScienceIcon from '@mui/icons-material/Science';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -37,6 +39,7 @@ export default function InfraPage() {
   const [redisInfo, setRedisInfo] = useState<any>(null);
   const [claves, setClaves] = useState<any[]>([]);
   const [shardOps, setShardOps] = useState<any[]>([]);
+  const [redisOps, setRedisOps] = useState<any[]>([]);
   const [ts, setTs] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [ruteoInput, setRuteoInput] = useState('');
@@ -52,6 +55,7 @@ export default function InfraPage() {
       api.getRedisInfo().then(setRedisInfo).catch(() => {}),
       api.getRedisClaves().then(setClaves).catch(() => []),
       api.getShardOps().then(setShardOps).catch(() => []),
+      api.getRedisOps().then(setRedisOps).catch(() => []),
     ]);
     setTs(new Date().toLocaleTimeString('es-PE'));
   }, []);
@@ -102,7 +106,7 @@ export default function InfraPage() {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: 3, pb: 8 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
           <Button variant="contained" onClick={loadAll}>↺ Actualizar todo</Button>
           {ts && <Typography variant="caption" color="text.secondary">Último refresh: {ts}</Typography>}
@@ -241,6 +245,56 @@ export default function InfraPage() {
           </Card>
         </Box>
 
+        {/* Redis ops log */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ color: '#00897B', borderBottom: '2px solid #B2DFDB', pb: 0.5, mb: 1.5 }}>
+            Redis — Log de operaciones
+          </Typography>
+          <Card>
+            <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+              <TableContainer sx={{ maxHeight: 300 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Timestamp</TableCell>
+                      <TableCell>Key</TableCell>
+                      <TableCell>Op</TableCell>
+                      <TableCell>Descripción</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {redisOps.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 3 }}>
+                          Sin operaciones aún.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      redisOps.map((op: any, i: number) => {
+                        const ts = op.ts ? new Date(op.ts).toLocaleTimeString('es-PE') : '—';
+                        return (
+                          <TableRow key={i}>
+                            <TableCell sx={{ whiteSpace: 'nowrap', fontSize: 12 }}>{ts}</TableCell>
+                            <TableCell sx={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12 }}>{op.key}</TableCell>
+                            <TableCell>
+                              <Chip label={op.op} size="small" sx={{
+                                fontWeight: 600, fontSize: 11,
+                                bgcolor: op.op === 'write' ? '#E8F5E9' : '#F3E5F5',
+                                color: op.op === 'write' ? '#2E7D32' : '#6A1B9A',
+                              }} />
+                            </TableCell>
+                            <TableCell sx={{ fontSize: 12 }}>{op.detail}</TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Box>
+
         {/* Redis info */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ color: '#00897B', borderBottom: '2px solid #B2DFDB', pb: 0.5, mb: 1.5 }}>
@@ -358,6 +412,14 @@ export default function InfraPage() {
           </TableContainer>
         </Box>
       </Box>
+      <Fab
+        color="primary"
+        size="small"
+        onClick={loadAll}
+        sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}
+      >
+        <RefreshIcon />
+      </Fab>
     </Box>
   );
 }

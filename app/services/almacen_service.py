@@ -147,6 +147,7 @@ async def get_pedido_detalle(pedido_id: str) -> dict:
     # Intentar desde cache Redis primero
     cached = await r.get(f"pedido_estado:{pedido_id}")
     if cached:
+        await redis_db.log_redis_op(f"pedido_estado:{pedido_id}", "read", "detalle_cache_hit")
         return json.loads(cached)
 
     # Fallback a MongoDB
@@ -159,6 +160,7 @@ async def get_pedido_detalle(pedido_id: str) -> dict:
 
     # Guardar en cache Redis (incluyendo shard)
     await r.set(f"pedido_estado:{pedido_id}", json.dumps(result), ex=86400)
+    await redis_db.log_redis_op(f"pedido_estado:{pedido_id}", "write", "detalle_cache_set")
 
     uid = doc.get("usuario_id", "")
     await mongo.log_shard_op(sid, "read", "pedidos", uid, "detalle")
@@ -187,6 +189,7 @@ async def actualizar_estado_pedido(pedido_id: str, nuevo_estado: str) -> dict:
     r = redis_db.get_redis()
     doc["estado"] = nuevo_estado
     await r.set(f"pedido_estado:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
+    await redis_db.log_redis_op(f"pedido_estado:{pedido_id}", "write", f"cambiar_estado:{nuevo_estado}")
 
     uid = doc.get("usuario_id", "")
     await mongo.log_shard_op(sid, "write", "pedidos", uid, f"cambiar_estado:{nuevo_estado}")
@@ -237,6 +240,7 @@ async def actualizar_estado_producto(pedido_id: str, producto_id: str, nuevo_est
         doc = await db.pedidos.find_one({"_id": oid})
     r = redis_db.get_redis()
     await r.set(f"pedido_estado:{pedido_id}", json.dumps(_jsonable(doc)), ex=86400)
+    await redis_db.log_redis_op(f"pedido_estado:{pedido_id}", "write", f"toggle_producto:{producto_id}->{nuevo_estado}")
 
     return {
         "pedido_id": pedido_id,

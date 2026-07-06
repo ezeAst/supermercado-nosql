@@ -38,15 +38,20 @@ export const api = {
   listUsuarios: (rol: string) => request<Usuario[]>(`/auth/usuarios?rol=${rol}`),
 
   // Productos
-  getProductos: (params?: { pasillo_id?: string; search?: string; page?: number; limit?: number }) => {
+  getProductos: (params?: { pasillo_id?: string; departamento_id?: string; search?: string; page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.pasillo_id) q.set('pasillo_id', params.pasillo_id);
+    if (params?.departamento_id) q.set('departamento_id', params.departamento_id);
     if (params?.search) q.set('search', params.search);
     if (params?.page) q.set('page', String(params.page));
     if (params?.limit) q.set('limit', String(params.limit));
     const qs = q.toString();
     return request<any>(`/productos${qs ? `?${qs}` : ''}`);
   },
+
+  getPasillos: () => request<any[]>('/pasillos'),
+
+  getDepartamentos: () => request<any[]>('/departamentos'),
 
   // Carrito
   getCarrito: (usuarioId: string) =>
@@ -125,6 +130,7 @@ export const api = {
   getIndices: () => request<any>('/infra/mongo/indices'),
   getShardOps: () => request<any[]>('/infra/mongo/shard-ops'),
   getShardForUser: (usuarioId: string) => request<any>(`/infra/mongo/shard-for-user/${usuarioId}`),
+  getRedisOps: () => request<any[]>('/infra/redis/ops'),
   deleteRedisClave: (clave: string) =>
     request<any>(`/infra/redis/claves/${encodeURIComponent(clave)}`, { method: 'DELETE' }),
   getRedisInfo: () => request<any>('/infra/redis/info'),

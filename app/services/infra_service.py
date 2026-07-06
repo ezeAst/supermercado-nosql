@@ -146,3 +146,15 @@ async def get_shard_ops() -> list:
         except json.JSONDecodeError:
             continue
     return result
+
+
+async def get_redis_ops() -> list:
+    r = redis_db.get_redis()
+    raw = await r.lrange("redis_log:ops", 0, 49)
+    result = []
+    for entry in raw:
+        try:
+            result.append(json.loads(entry))
+        except json.JSONDecodeError:
+            continue
+    return result

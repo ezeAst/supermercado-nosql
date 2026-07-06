@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import type { Pedido } from '../../types';
+import type { Pedido, PedidosResponse } from '../../types';
 
 const badgeStyles: Record<string, any> = {
   registrado: { bgcolor: '#E3F2FD', color: '#1565C0' },
@@ -34,18 +34,34 @@ export default function HistorialPage() {
   const { usuario } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(false);
   const [selected, setSelected] = useState<Pedido | null>(null);
 
   const load = useCallback(async () => {
     if (!usuario) return;
     setLoading(true);
     try {
-      const data = await api.getHistorial(usuario._id, { limit: 20 });
+      const data: PedidosResponse = await api.getHistorial(usuario._id, { limit: 10 });
       setPedidos(data.pedidos || []);
+      setCursor(data.siguiente_cursor);
+      setHasMore(!!data.siguiente_cursor);
     } catch { setPedidos([]); } finally { setLoading(false); }
   }, [usuario]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadMore = async () => {
+    if (!usuario || !cursor) return;
+    setLoadingMore(true);
+    try {
+      const data: PedidosResponse = await api.getHistorial(usuario._id, { limit: 10, before: cursor });
+      setPedidos((prev) => [...prev, ...(data.pedidos || [])]);
+      setCursor(data.siguiente_cursor);
+      setHasMore(!!data.siguiente_cursor);
+    } catch {} finally { setLoadingMore(false); }
+  };
 
   return (
     <Box>
@@ -87,11 +103,7 @@ export default function HistorialPage() {
                       <TableRow key={p._id} hover>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{fecha}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={p.estado}
-                            size="small"
-                            sx={{ fontWeight: 600, fontSize: 11, ...badgeStyles[p.estado] }}
-                          />
+                          <Chip label={p.estado} size="small" sx={{ fontWeight: 600, fontSize: 11, ...badgeStyles[p.estado] }} />
                         </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600, fontFamily: '"JetBrains Mono", monospace' }}>
                           S/ {p.total.toFixed(2)}
@@ -109,52 +121,44 @@ export default function HistorialPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          {hasMore && !loading && (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Button variant="outlined" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? 'Cargando…' : 'Cargar más'}
+              </Button>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
       <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontFamily: '"Playfair Display", serif' }}>
-          Detalle del Pedido
-        </DialogTitle>
+        <DialogTitle sx={{ fontFamily: '"Playfair Display", serif' }}>Detalle del Pedido</DialogTitle>
         <DialogContent>
           {selected && (
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Total</Typography>
-                  <Typography variant="h6" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                    S/ {selected.total.toFixed(2)}
-                  </Typography>
+                  <Typography variant="h6" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>S/ {selected.total.toFixed(2)}</Typography>
                 </Box>
                 <Box sx={{ textAlign: 'right' }}>
                   <Typography variant="caption" color="text.secondary">Estado</Typography>
-                  <Box>
-                    <Chip
-                      label={selected.estado}
-                      size="small"
-                      sx={{ fontWeight: 600, ...badgeStyles[selected.estado] }}
-                    />
-                  </Box>
+                  <Box><Chip label={selected.estado} size="small" sx={{ fontWeight: 600, ...badgeStyles[selected.estado] }} /></Box>
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">Dirección de entrega</Typography>
               <Typography variant="body2" sx={{ mb: 2 }}>{selected.direccion_entrega}</Typography>
               <Typography variant="caption" color="text.secondary">Método de pago</Typography>
               <Typography variant="body2" sx={{ mb: 2, textTransform: 'capitalize' }}>{selected.metodo_pago}</Typography>
-
               <Typography variant="subtitle2" sx={{ mb: 1, mt: 1 }}>Productos</Typography>
               <List dense disablePadding>
                 {selected.productos?.map((prod) => (
                   <ListItem key={prod.producto_id} sx={{ px: 0, display: 'flex', justifyContent: 'space-between' }}>
                     <Box>
                       <Typography variant="body2">{prod.nombre}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Pasillo: {prod.pasillo_nombre}
-                      </Typography>
+                      <Typography variant="caption" color="text.secondary">Pasillo: {prod.pasillo_nombre}</Typography>
                     </Box>
-                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                      ×{prod.cantidad}
-                    </Typography>
+                    <Typography variant="body2" sx={{ fontFamily: '"JetBrains Mono", monospace' }}>×{prod.cantidad}</Typography>
                   </ListItem>
                 ))}
               </List>

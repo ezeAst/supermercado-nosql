@@ -45,3 +45,8 @@ async def delete_redis_clave(clave: str):
     if result == 0:
         raise HTTPException(status_code=404, detail="Clave no encontrada")
     return {"ok": True, "clave": clave}
+
+
+@router.get("/redis/ops", summary="Log de operaciones Redis")
+async def get_redis_ops():
+    return await infra_service.get_redis_ops()

@@ -14,6 +14,10 @@ import {
   TablePagination,
   IconButton,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
@@ -30,11 +34,26 @@ export default function ProductosPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pasillos, setPasillos] = useState<any[]>([]);
+  const [departamentos, setDepartamentos] = useState<any[]>([]);
+  const [pasilloId, setPasilloId] = useState('');
+  const [deptoId, setDeptoId] = useState('');
 
-  const load = async (p: number, limit: number, search: string) => {
+  useEffect(() => {
+    api.getPasillos().then(setPasillos).catch(() => {});
+    api.getDepartamentos().then(setDepartamentos).catch(() => {});
+  }, []);
+
+  const load = async (p: number, limit: number, search: string, pid: string, did: string) => {
     setLoading(true);
     try {
-      const data = await api.getProductos({ search: search || undefined, page: p, limit });
+      const data = await api.getProductos({
+        search: search || undefined,
+        pasillo_id: pid || undefined,
+        departamento_id: did || undefined,
+        page: p,
+        limit,
+      });
       setItems(data.items || []);
       setTotal(data.total || 0);
     } catch {
@@ -46,8 +65,8 @@ export default function ProductosPage() {
   };
 
   useEffect(() => {
-    load(page + 1, rowsPerPage, searchTerm);
-  }, [page, rowsPerPage, searchTerm]);
+    load(page + 1, rowsPerPage, searchTerm, pasilloId, deptoId);
+  }, [page, rowsPerPage, searchTerm, pasilloId, deptoId]);
 
   const handleAgregar = async (id: string) => {
     if (!usuario) return;
@@ -58,32 +77,41 @@ export default function ProductosPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h5">Productos</Typography>
-        <TextField
-          size="small"
-          placeholder="Buscar productos…"
-          value={filtro}
-          onChange={(e) => {
-            setFiltro(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              setSearchTerm(filtro);
-              setPage(0);
-            }
-          }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{ width: 280 }}
-        />
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Pasillo</InputLabel>
+            <Select value={pasilloId} label="Pasillo" onChange={(e) => { setPasilloId(e.target.value); setPage(0); }}>
+              <MenuItem value="">Todos</MenuItem>
+              {pasillos.map((p) => (
+                <MenuItem key={p._id} value={p._id}>{p.nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Departamento</InputLabel>
+            <Select value={deptoId} label="Departamento" onChange={(e) => { setDeptoId(e.target.value); setPage(0); }}>
+              <MenuItem value="">Todos</MenuItem>
+              {departamentos.map((d) => (
+                <MenuItem key={d._id} value={d._id}>{d.nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            size="small"
+            placeholder="Buscar…"
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setSearchTerm(filtro); setPage(0); } }}
+            slotProps={{
+              input: {
+                startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+              },
+            }}
+            sx={{ width: 200 }}
+          />
+        </Box>
       </Box>
 
       <Card>
@@ -103,15 +131,11 @@ export default function ProductosPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
-                      Cargando productos…
-                    </TableCell>
+                    <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>Cargando…</TableCell>
                   </TableRow>
                 ) : items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>
-                      Sin resultados.
-                    </TableCell>
+                    <TableCell colSpan={6} align="center" sx={{ color: '#888', fontStyle: 'italic', py: 4 }}>Sin resultados.</TableCell>
                   </TableRow>
                 ) : (
                   items.map((p: Producto) => (
@@ -124,12 +148,7 @@ export default function ProductosPage() {
                       </TableCell>
                       <TableCell align="right">{p.stock}</TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleAgregar(p._id)}
-                          title="Agregar al carrito"
-                        >
+                        <IconButton size="small" color="primary" onClick={() => handleAgregar(p._id)} title="Agregar al carrito">
                           <AddShoppingCartIcon />
                         </IconButton>
                       </TableCell>
